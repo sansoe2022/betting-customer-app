@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { auth, googleProvider } from './firebase';
 import { signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, updateProfile, User } from 'firebase/auth';
-import { Home, Clock, Settings, LogOut, CheckCircle, UserCircle, Calendar, Sun, Moon, Globe, Mail } from 'lucide-react';
+import { Home, Clock, Settings, LogOut, CheckCircle, UserCircle, Calendar, Sun, Moon, Globe, Mail, AlertTriangle } from 'lucide-react';
 import './App.css';
 
 const API_BASE_URL = 'https://betting-api-worker.sansoe5227.workers.dev'; 
 
-// ဘာသာစကားအတွက် စာသားများ
 const translations = {
   en: {
     submitTab: "Submit", historyTab: "My Bets", settingsTab: "Settings",
@@ -18,19 +17,21 @@ const translations = {
     account: "Account", email: "Connected Email", logout: "Logout",
     preferences: "Preferences", darkTheme: "Dark Theme", language: "Language",
     confirmTitle: "Confirm Submission", confirmDesc: "Please review your list before submitting.",
-    cancel: "Cancel", confirmBtn: "Confirm & Send"
+    cancel: "Cancel", confirmBtn: "Confirm & Send",
+    logoutConfirmTitle: "Confirm Logout", logoutConfirmDesc: "Are you sure you want to log out?"
   },
   my: {
     submitTab: "စာရင်းပို့ရန်", historyTab: "မှတ်တမ်း", settingsTab: "ဆက်တင်",
     title: "စာရင်းပေးပို့ရန်", hello: "မင်္ဂလာပါ", type: "အမျိုးအစား", session: "အချိန်", morning: "မနက်ပိုင်း", evening: "ညနေပိုင်း",
-    betsLabel: "ထိုးကြေးများ (ဥပမာ - 12 500)", submitBtn: "ပေးပို့မည်",
+    betsLabel: "ထိုးကြေးများ", submitBtn: "ပေးပို့မည်",
     historyTitle: "ကျွန်ုပ်၏ မှတ်တမ်းများ", noRecords: "မှတ်တမ်း မရှိသေးပါ။", total: "စုစုပေါင်း",
     settingsTitle: "ဆက်တင်များ", profile: "ပရိုဖိုင်", displayName: "သင့်အမည် (Display Name)", 
     nameHint: "ဒီနာမည်ကို Admin ဘက်မှာ မြင်ရပါမည်။", save: "သိမ်းမည်",
     account: "အကောင့်", email: "ချိတ်ဆက်ထားသော အီးမေးလ်", logout: "အကောင့်ထွက်မည်",
     preferences: "အပြင်အဆင်များ", darkTheme: "အမှောင်မြင်ကွင်း", language: "ဘာသာစကား",
     confirmTitle: "စာရင်းအတည်ပြုရန်", confirmDesc: "မပို့မီ အောက်ပါအချက်အလက်များကို သေချာစစ်ဆေးပါ။",
-    cancel: "ပယ်ဖျက်မည်", confirmBtn: "အတည်ပြုပြီး ပို့မည်"
+    cancel: "ပယ်ဖျက်မည်", confirmBtn: "အတည်ပြုပြီး ပို့မည်",
+    logoutConfirmTitle: "အကောင့်ထွက်ရန်", logoutConfirmDesc: "အကောင့်မှ ထွက်မှာ သေချာပါသလား?"
   }
 };
 
@@ -39,34 +40,42 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'submit' | 'history' | 'settings'>('submit');
   
-  // App Settings State
-  const [lang, setLang] = useState<'en' | 'my'>('my');
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  // Persist App Settings
+  const [lang, setLang] = useState<'en' | 'my'>(() => (localStorage.getItem('app_lang') as 'en' | 'my') || 'en');
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('app_dark_mode') === 'true');
   const t = translations[lang];
 
-  // Submit Form States (Auto set morning/evening based on time)
   const currentHour = new Date().getHours();
   const autoSession = currentHour < 12 ? 'morning' : 'evening';
   const [customerName, setCustomerName] = useState('');
-  const [bettingType, setBettingType] = useState('2D');
+  const [bettingType, setBettingType] = useState<'2D' | '3D'>('2D');
   const [session, setSession] = useState(autoSession);
   const [bettingData, setBettingData] = useState('');
   
-  // History States (Admin UI like)
   const [historyDate, setHistoryDate] = useState(new Date().toISOString().split('T')[0]);
   const [historySession, setHistorySession] = useState(autoSession);
   const [myBets, setMyBets] = useState<any[]>([]);
 
-  // Profile Edit State
   const [editName, setEditName] = useState('');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
 
-  // Modal State
+  // Modals & Toast State
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<any>(null);
+  const [toastMsg, setToastMsg] = useState('');
+
+  const showToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(''), 3000);
+  };
 
   useEffect(() => {
-    // Apply Dark Mode to body
+    localStorage.setItem('app_lang', lang);
+  }, [lang]);
+
+  useEffect(() => {
+    localStorage.setItem('app_dark_mode', String(isDarkMode));
     if (isDarkMode) document.body.classList.add('dark');
     else document.body.classList.remove('dark');
   }, [isDarkMode]);
@@ -90,11 +99,10 @@ export default function App() {
     catch (error) { alert('Login error'); }
   };
 
-  const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
-      signOut(auth);
-      setMyBets([]);
-    }
+  const executeLogout = () => {
+    signOut(auth);
+    setMyBets([]);
+    setShowLogoutConfirm(false);
   };
 
   const handleUpdateName = async (e: React.FormEvent) => {
@@ -104,9 +112,9 @@ export default function App() {
     try {
       await updateProfile(user, { displayName: editName });
       setCustomerName(editName);
-      alert('နာမည် ပြောင်းလဲခြင်း အောင်မြင်ပါသည်။');
+      showToast(lang === 'my' ? 'နာမည် ပြောင်းလဲခြင်း အောင်မြင်ပါသည်။' : 'Name updated successfully!');
     } catch (error) {
-      alert('နာမည်ပြောင်းလဲခြင်း မအောင်မြင်ပါ။');
+      alert('Error updating name.');
     } finally {
       setIsUpdatingName(false);
     }
@@ -145,14 +153,13 @@ export default function App() {
     return { total, entries };
   };
 
-  // 1. Submit form နှိပ်လျှင် Confirm Box အရင်ပြမည်
   const handlePreSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !bettingData.trim()) return;
 
     const { total, entries } = calculateTotal(bettingData);
     if (total === 0) {
-      alert('ပုံစံမှားယွင်းနေပါသည်။ (ဥပမာ - 12 500)');
+      alert(lang === 'my' ? 'ပုံစံမှားယွင်းနေပါသည်။' : 'Invalid format.');
       return;
     }
 
@@ -166,10 +173,9 @@ export default function App() {
       session: session,
       bet_date: new Date().toISOString().split('T')[0],
     });
-    setShowConfirm(true); // Modal ဖွင့်မည်
+    setShowConfirm(true); 
   };
 
-  // 2. Confirm Box ထဲက အတည်ပြုခလုတ်နှိပ်မှ တကယ်ပို့မည်
   const handleFinalSubmit = async () => {
     if (!pendingPayload) return;
     setShowConfirm(false);
@@ -182,12 +188,12 @@ export default function App() {
       });
 
       if (response.ok) {
-        alert('စာရင်းပေးပို့ခြင်း အောင်မြင်ပါသည်။');
+        showToast(lang === 'my' ? 'စာရင်းပေးပို့ခြင်း အောင်မြင်ပါသည်။' : 'Submitted successfully!');
         setBettingData('');
         fetchMyBets(user!.uid); 
         setActiveTab('history'); 
       } else {
-        alert('ပေးပို့ခြင်း မအောင်မြင်ပါ။');
+        alert('Failed to submit.');
       }
     } catch (error) {
       alert('Network error.');
@@ -201,8 +207,8 @@ export default function App() {
     return Array.isArray(data) ? data : [];
   };
 
-  // Filter bets based on selected Date and Session
   const filteredBets = myBets.filter(bet => bet.bet_date === historyDate && bet.session === historySession);
+  const placeholderHint = bettingType === '2D' ? (lang === 'my' ? "ဥပမာ - 12 500\n34 1000R" : "e.g., 12 500\n34 1000R") : (lang === 'my' ? "ဥပမာ - 123 500\n456 1000R" : "e.g., 123 500\n456 1000R");
 
   if (loading) return <div className="container"><p style={{textAlign: 'center', marginTop: 50}}>Loading...</p></div>;
 
@@ -210,8 +216,8 @@ export default function App() {
     return (
       <div className="container login-screen">
         <h1 style={{ color: 'var(--primary)', marginBottom: '10px', fontSize: '28px' }}>Lucky 2D/3D</h1>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '30px' }}>စာရင်းပေးပို့ရန် Google အကောင့်ဖြင့် ဝင်ပါ။</p>
-        <button className="btn btn-primary" onClick={handleLogin}>
+        <p style={{ color: 'var(--text-muted)', marginBottom: '30px' }}>Sign in to submit your list.</p>
+        <button className="btn btn-primary no-select" onClick={handleLogin}>
           Sign in with Google
         </button>
       </div>
@@ -220,6 +226,12 @@ export default function App() {
 
   return (
     <>
+      {toastMsg && (
+        <div className="toast-container">
+          <CheckCircle size={18} /> {toastMsg}
+        </div>
+      )}
+
       <div className="container">
         {/* TAB 1: SUBMIT LIST */}
         {activeTab === 'submit' && (
@@ -232,20 +244,19 @@ export default function App() {
             </div>
             <div className="card">
               <form onSubmit={handlePreSubmit}>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <label className="form-label">{t.type}</label>
-                    <select className="form-select" value={bettingType} onChange={e => setBettingType(e.target.value)}>
-                      <option value="2D">2D</option>
-                      <option value="3D">3D</option>
-                    </select>
+                <div className="form-group">
+                  <label className="form-label">{t.type}</label>
+                  <div className="toggle-group no-select">
+                    <button type="button" className={`toggle-btn ${bettingType === '2D' ? 'active' : ''}`} onClick={() => setBettingType('2D')}>2D (00-99)</button>
+                    <button type="button" className={`toggle-btn ${bettingType === '3D' ? 'active' : ''}`} onClick={() => setBettingType('3D')}>3D (000-999)</button>
                   </div>
-                  <div className="form-group" style={{ flex: 1 }}>
-                    <label className="form-label">{t.session}</label>
-                    <select className="form-select" value={session} onChange={e => setSession(e.target.value)}>
-                      <option value="morning">{t.morning}</option>
-                      <option value="evening">{t.evening}</option>
-                    </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">{t.session}</label>
+                  <div className="toggle-group no-select">
+                    <button type="button" className={`toggle-btn ${session === 'morning' ? 'active' : ''}`} onClick={() => setSession('morning')}><Sun size={14}/> {t.morning}</button>
+                    <button type="button" className={`toggle-btn ${session === 'evening' ? 'active' : ''}`} onClick={() => setSession('evening')}><Moon size={14}/> {t.evening}</button>
                   </div>
                 </div>
 
@@ -256,11 +267,11 @@ export default function App() {
                     rows={6} 
                     value={bettingData} 
                     onChange={e => setBettingData(e.target.value)} 
-                    placeholder="12 500&#10;34 1000R"
+                    placeholder={placeholderHint}
                     required 
                   />
                 </div>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary no-select">
                   <CheckCircle size={18} /> {t.submitBtn}
                 </button>
               </form>
@@ -275,26 +286,16 @@ export default function App() {
               <h1>{t.historyTitle}</h1>
             </div>
 
-            {/* Admin-like Date & Session Bar */}
             <div className="date-bar">
-              <div className="date-btn">
+              <div className="date-btn no-select">
                 <Calendar size={15} />
                 <span>{historyDate}</span>
-                <input
-                  type="date"
-                  value={historyDate}
-                  onChange={(e) => { if (e.target.value) setHistoryDate(e.target.value); }}
-                  style={{ position: 'absolute', opacity: 0, left: 0, top: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-                />
+                <input type="date" value={historyDate} onChange={(e) => { if (e.target.value) setHistoryDate(e.target.value); }} style={{ position: 'absolute', opacity: 0, left: 0, top: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
               </div>
-              <div className="toggle-group">
-                <button className={`toggle-btn ${historySession === 'morning' ? 'active' : ''}`} onClick={() => setHistorySession('morning')}>
-                  <Sun size={14} /> {t.morning}
-                </button>
-                <button className={`toggle-btn ${historySession === 'evening' ? 'active' : ''}`} onClick={() => setHistorySession('evening')}>
-                  <Moon size={14} /> {t.evening}
-                </button>
-              </div>
+            </div>
+            <div className="toggle-group no-select" style={{ marginBottom: '16px' }}>
+              <button type="button" className={`toggle-btn ${historySession === 'morning' ? 'active' : ''}`} onClick={() => setHistorySession('morning')}><Sun size={14} /> {t.morning}</button>
+              <button type="button" className={`toggle-btn ${historySession === 'evening' ? 'active' : ''}`} onClick={() => setHistorySession('evening')}><Moon size={14} /> {t.evening}</button>
             </div>
 
             <div className="card">
@@ -342,7 +343,6 @@ export default function App() {
               <h1>{t.settingsTitle}</h1>
             </div>
             
-            {/* Preferences */}
             <h3 style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px', marginLeft: '4px', textTransform: 'uppercase' }}>{t.preferences}</h3>
             <div className="card" style={{ padding: '10px 20px', marginBottom: '24px' }}>
               <div className="settings-item">
@@ -371,14 +371,13 @@ export default function App() {
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lang === 'my' ? 'မြန်မာ' : 'English'}</div>
                   </div>
                 </div>
-                <div className="lang-btns">
-                  <button className={`lang-btn ${lang === 'my' ? 'active' : ''}`} onClick={() => setLang('my')}>မြန်မာ</button>
-                  <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
+                <div className="lang-btns no-select">
+                  <button type="button" className={`lang-btn ${lang === 'my' ? 'active' : ''}`} onClick={() => setLang('my')}>မြန်မာ</button>
+                  <button type="button" className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
                 </div>
               </div>
             </div>
 
-            {/* Profile */}
             <h3 style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px', marginLeft: '4px', textTransform: 'uppercase' }}>{t.profile}</h3>
             <div className="card" style={{ marginBottom: '24px' }}>
               <form onSubmit={handleUpdateName}>
@@ -387,16 +386,9 @@ export default function App() {
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <div style={{ position: 'relative', flex: 1 }}>
                       <UserCircle size={18} style={{ position: 'absolute', left: '10px', top: '14px', color: 'var(--text-muted)' }} />
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        style={{ paddingLeft: '36px' }}
-                        value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                        required
-                      />
+                      <input type="text" className="form-input" style={{ paddingLeft: '36px' }} value={editName} onChange={e => setEditName(e.target.value)} required />
                     </div>
-                    <button type="submit" className="btn btn-primary" style={{ width: 'auto', padding: '0 20px' }} disabled={isUpdatingName}>
+                    <button type="submit" className="btn btn-primary no-select" style={{ width: 'auto', padding: '0 20px' }} disabled={isUpdatingName}>
                       {isUpdatingName ? '...' : t.save}
                     </button>
                   </div>
@@ -405,7 +397,6 @@ export default function App() {
               </form>
             </div>
             
-            {/* Account */}
             <h3 style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px', marginLeft: '4px', textTransform: 'uppercase' }}>{t.account}</h3>
             <div className="card" style={{ padding: '10px 20px' }}>
               <div className="settings-item">
@@ -419,7 +410,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              <div className="settings-item" onClick={handleLogout} style={{ cursor: 'pointer', borderBottom: 'none' }}>
+              <div className="settings-item no-select" onClick={() => setShowLogoutConfirm(true)} style={{ cursor: 'pointer', borderBottom: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div className="settings-icon-bg" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
                     <LogOut size={18} />
@@ -436,37 +427,69 @@ export default function App() {
       </div>
 
       {/* BOTTOM NAVIGATION */}
-      <div className="bottom-nav">
-        <button className={`nav-item ${activeTab === 'submit' ? 'active' : ''}`} onClick={() => setActiveTab('submit')}>
+      <div className="bottom-nav no-select">
+        <button type="button" className={`nav-item ${activeTab === 'submit' ? 'active' : ''}`} onClick={() => setActiveTab('submit')}>
           <Home size={22} />
           <span>{t.submitTab}</span>
         </button>
-        <button className={`nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
+        <button type="button" className={`nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
           <Clock size={22} />
           <span>{t.historyTab}</span>
         </button>
-        <button className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+        <button type="button" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
           <Settings size={22} />
           <span>{t.settingsTab}</span>
         </button>
       </div>
 
-      {/* CONFIRMATION MODAL */}
+      {/* SUBMIT CONFIRMATION MODAL */}
       {showConfirm && pendingPayload && (
         <div className="modal-overlay">
           <div className="modal-content">
             <div className="modal-title">{t.confirmTitle}</div>
             <div className="modal-body">
-              <p style={{ marginBottom: '12px' }}>{t.confirmDesc}</p>
-              <div style={{ background: 'var(--bg-color)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+              <p style={{ marginBottom: '12px', color: 'var(--text-muted)' }}>{t.confirmDesc}</p>
+              
+              <div style={{ background: 'var(--bg-color)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '12px' }}>
                 <p><strong>{t.type}:</strong> {pendingPayload.betting_type}</p>
                 <p><strong>{t.session}:</strong> {pendingPayload.session === 'morning' ? t.morning : t.evening}</p>
-                <p><strong>{t.total}:</strong> <span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{pendingPayload.total_amount} MMK</span></p>
+                <p style={{ marginTop: '4px' }}><strong>{t.total}:</strong> <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '16px' }}>{pendingPayload.total_amount} MMK</span></p>
               </div>
+
+              {/* ထိုးထားသော ဂဏန်းများ ပြပေးသည့်နေရာ */}
+              <div style={{ maxHeight: '150px', overflowY: 'auto', padding: '4px 0' }}>
+                <div className="bet-pill-container" style={{ margin: 0, border: 'none', background: 'transparent', padding: 0 }}>
+                  {pendingPayload.betting_data.map((entry: any, i: number) => (
+                    <span key={i} className="bet-pill" style={{ padding: '4px 10px', fontSize: '13px' }}>
+                      {entry.number} : <span style={{color:'var(--primary)'}}>{entry.amount}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
             </div>
-            <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowConfirm(false)}>{t.cancel}</button>
-              <button className="btn btn-primary" onClick={handleFinalSubmit}>{t.confirmBtn}</button>
+            <div className="modal-actions no-select">
+              <button type="button" className="btn btn-primary" onClick={handleFinalSubmit}>{t.confirmBtn}</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowConfirm(false)}>{t.cancel}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle color="#ef4444" size={22} />
+              {t.logoutConfirmTitle}
+            </div>
+            <div className="modal-body">
+              <p style={{ color: 'var(--text-muted)' }}>{t.logoutConfirmDesc}</p>
+            </div>
+            <div className="modal-actions no-select">
+              <button type="button" className="btn btn-danger" onClick={executeLogout}>{t.logout}</button>
+              <button type="button" className="btn btn-secondary" onClick={() => setShowLogoutConfirm(false)}>{t.cancel}</button>
             </div>
           </div>
         </div>
