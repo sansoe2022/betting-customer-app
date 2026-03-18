@@ -1,37 +1,79 @@
 :root {
-  --primary: #2563eb;
+  --primary: #4f46e5;
   --bg-color: #f3f4f6;
   --card-bg: #ffffff;
   --text-main: #1f2937;
   --text-muted: #6b7280;
   --border: #e5e7eb;
+  --modal-overlay: rgba(0, 0, 0, 0.4);
 }
+
+/* Dark Mode Variables */
+.dark {
+  --bg-color: #111827;
+  --card-bg: #1f2937;
+  --text-main: #f9fafb;
+  --text-muted: #9ca3af;
+  --border: #374151;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 70px; }
+body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 80px; transition: background-color 0.3s ease; }
 .container { max-width: 500px; margin: 0 auto; padding: 16px; }
-.header { text-align: center; margin-bottom: 24px; padding-top: 10px; }
-.header h1 { font-size: 22px; color: var(--primary); }
+.header { text-align: center; margin-bottom: 20px; padding-top: 10px; }
+.header h1 { font-size: 22px; color: var(--primary); margin-bottom: 4px; }
 
-.card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); }
 .form-group { margin-bottom: 16px; }
-.form-label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 8px; color: var(--text-main); }
-.form-input, .form-textarea, .form-select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #fff; }
-.btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
-.btn-primary { background: var(--primary); color: white; }
-.btn-danger { background: #dc2626; color: white; }
+.form-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text-main); }
+.form-input, .form-textarea, .form-select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; background: var(--bg-color); color: var(--text-main); outline: none; }
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--primary); }
 
-.bet-list-item { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
+.btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-danger { background: #ef4444; color: white; }
+.btn-secondary { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border); }
+
+/* Admin-like Date Bar */
+.date-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.date-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--card-bg); border: 1px solid var(--border); padding: 10px; border-radius: 10px; color: var(--text-main); font-weight: 600; cursor: pointer; flex: 1; position: relative; overflow: hidden; }
+.toggle-group { display: flex; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; flex: 1.2; }
+.toggle-btn { flex: 1; padding: 10px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: 0.2s; }
+.toggle-btn.active { background: var(--primary); color: white; }
+
+.bet-list-item { border-bottom: 1px dashed var(--border); padding-bottom: 16px; margin-bottom: 16px; }
 .bet-list-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 .bet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; text-transform: uppercase;}
-.badge.pending { background: #ca8a04; }
-.badge.approved { background: #16a34a; }
-.badge.rejected { background: #dc2626; }
+.badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; text-transform: uppercase; letter-spacing: 0.5px;}
+.badge.pending { background: #f59e0b; }
+.badge.approved { background: #10b981; }
+.badge.rejected { background: #ef4444; }
 
-.bet-pill-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.bet-pill { background: #f3f4f6; padding: 6px 10px; border-radius: 6px; font-size: 13px; border: 1px solid #e5e7eb; color: #374151; font-weight: 500; }
+.bet-pill-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px dashed var(--border); }
+.bet-pill { background: var(--card-bg); padding: 6px 12px; border-radius: 20px; font-size: 14px; border: 1px solid var(--border); color: var(--text-main); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; max-width: 500px; margin: 0 auto; }
-.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; font-weight: bold; cursor: pointer; border: none; background: transparent; gap: 4px; width: 33%; }
+/* Settings */
+.settings-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.settings-item:last-child { border-bottom: none; }
+.settings-icon-bg { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.switch-track { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--border); transition: .4s; border-radius: 24px; }
+.switch-track:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .switch-track { background-color: var(--primary); }
+input:checked + .switch-track:before { transform: translateX(20px); }
+
+.lang-btns { display: flex; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border); overflow: hidden;}
+.lang-btn { padding: 6px 12px; border: none; background: transparent; color: var(--text-muted); font-weight: bold; cursor: pointer; font-size: 12px;}
+.lang-btn.active { background: var(--primary); color: white; }
+
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 12px 0; z-index: 100; max-width: 500px; margin: 0 auto; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: transparent; gap: 6px; width: 33%; }
 .nav-item.active { color: var(--primary); }
 .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; }
+
+/* Modal Box */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(2px); }
+.modal-content { background: var(--card-bg); width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: slideUp 0.3s ease; border: 1px solid var(--border); }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
