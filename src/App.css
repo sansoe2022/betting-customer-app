@@ -1,0 +1,41 @@
+:root {
+  --primary: #2563eb;
+  --success: #16a34a;
+  --warning: #ca8a04;
+  --danger: #dc2626;
+  --bg-color: #f3f4f6;
+  --card-bg: #ffffff;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --border: #e5e7eb;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
+
+body { background-color: var(--bg-color); color: var(--text-main); }
+
+.container { max-width: 500px; margin: 0 auto; padding: 16px; }
+
+.header { text-align: center; margin-bottom: 24px; padding-top: 20px; }
+.header h1 { font-size: 24px; color: var(--primary); }
+
+.card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 8px; color: var(--text-main); }
+.form-input, .form-textarea, .form-select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; }
+
+.btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.btn-primary { background: var(--primary); color: white; }
+.btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+
+.bet-list-item { border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px; }
+.bet-list-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.bet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+
+.badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
+.badge.pending { background: var(--warning); }
+.badge.approved { background: var(--success); }
+.badge.rejected { background: var(--danger); }
+
+.login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; }
