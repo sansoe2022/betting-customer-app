@@ -1,41 +1,37 @@
 :root {
   --primary: #2563eb;
-  --success: #16a34a;
-  --warning: #ca8a04;
-  --danger: #dc2626;
   --bg-color: #f3f4f6;
   --card-bg: #ffffff;
   --text-main: #1f2937;
   --text-muted: #6b7280;
   --border: #e5e7eb;
 }
-
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-
-body { background-color: var(--bg-color); color: var(--text-main); }
-
+body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 70px; }
 .container { max-width: 500px; margin: 0 auto; padding: 16px; }
-
-.header { text-align: center; margin-bottom: 24px; padding-top: 20px; }
-.header h1 { font-size: 24px; color: var(--primary); }
+.header { text-align: center; margin-bottom: 24px; padding-top: 10px; }
+.header h1 { font-size: 22px; color: var(--primary); }
 
 .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-
 .form-group { margin-bottom: 16px; }
 .form-label { display: block; font-size: 14px; font-weight: bold; margin-bottom: 8px; color: var(--text-main); }
-.form-input, .form-textarea, .form-select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; }
-
+.form-input, .form-textarea, .form-select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; background: #fff; }
 .btn { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .btn-primary { background: var(--primary); color: white; }
-.btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+.btn-danger { background: #dc2626; color: white; }
 
-.bet-list-item { border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 12px; }
+.bet-list-item { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px; }
 .bet-list-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-.bet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.bet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; text-transform: uppercase;}
+.badge.pending { background: #ca8a04; }
+.badge.approved { background: #16a34a; }
+.badge.rejected { background: #dc2626; }
 
-.badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; }
-.badge.pending { background: var(--warning); }
-.badge.approved { background: var(--success); }
-.badge.rejected { background: var(--danger); }
+.bet-pill-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.bet-pill { background: #f3f4f6; padding: 6px 10px; border-radius: 6px; font-size: 13px; border: 1px solid #e5e7eb; color: #374151; font-weight: 500; }
 
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; max-width: 500px; margin: 0 auto; }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; font-weight: bold; cursor: pointer; border: none; background: transparent; gap: 4px; width: 33%; }
+.nav-item.active { color: var(--primary); }
 .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; }
