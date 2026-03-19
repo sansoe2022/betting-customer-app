@@ -15,14 +15,15 @@ const translations = {
     winnersTitle: "Check Winners", winningNumber: "Winning Number", searchBtn: "Check", 
     winAmount: "Total Win Amount", noWinners: "No winners found for this number.",
     settingsTitle: "Settings", profile: "Profile", displayName: "Display Name", 
-    nameHint: "This name will be visible to the Admin.", save: "Save",
+    nameHint: "This name will be visible to Admin.", save: "Save",
     account: "Account", email: "Connected Email", logout: "Logout",
     preferences: "Preferences", darkTheme: "Dark Theme", language: "Language",
     confirmTitle: "Confirm Submission", confirmDesc: "Please review your list before submitting.",
     cancel: "Cancel", confirmBtn: "Confirm & Send",
     logoutConfirmTitle: "Confirm Logout", logoutConfirmDesc: "Are you sure you want to log out?",
     rejectReason: "Reason for rejection",
-    editResubmit: "Edit & Resubmit", editList: "Edit List", cancelEdit: "Cancel Edit"
+    editResubmit: "Edit & Resubmit", editList: "Edit List", cancelEdit: "Cancel Edit",
+    customerName: "Customer Name", paymentType: "Payment Type", cash: "Cash", credit: "Credit"
   },
   my: {
     submitTab: "စာရင်းပို့ရန်", historyTab: "မှတ်တမ်း", winnersTab: "ပေါက်ဂဏန်း", settingsTab: "ဆက်တင်",
@@ -39,8 +40,17 @@ const translations = {
     cancel: "ပယ်ဖျက်မည်", confirmBtn: "အတည်ပြုပြီး ပို့မည်",
     logoutConfirmTitle: "အကောင့်ထွက်ရန်", logoutConfirmDesc: "အကောင့်မှ ထွက်မှာ သေချာပါသလား?",
     rejectReason: "ပယ်ဖျက်ရသည့် အကြောင်းရင်း",
-    editResubmit: "ပြင်ဆင်ပြီး ပြန်ပို့မည်", editList: "စာရင်း ပြင်ဆင်ရန်", cancelEdit: "ပယ်ဖျက်မည်"
+    editResubmit: "ပြင်ဆင်ပြီး ပြန်ပို့မည်", editList: "စာရင်း ပြင်ဆင်ရန်", cancelEdit: "ပယ်ဖျက်မည်",
+    customerName: "ထိုးသူအမည် (Local)", paymentType: "ငွေချေစနစ်", cash: "လက်ငင်း", credit: "အကြွေး"
   }
+};
+
+// Local Storage Helper
+const getLocalMeta = () => JSON.parse(localStorage.getItem('local_bet_meta') || '{}');
+const saveLocalMeta = (id: string, name: string, paymentType: string) => {
+  const meta = getLocalMeta();
+  meta[id] = { name, paymentType };
+  localStorage.setItem('local_bet_meta', JSON.stringify(meta));
 };
 
 const parseBettingData = (data: any) => {
@@ -57,6 +67,11 @@ function SubmitPage({ user, t, lang, showToast, onSuccess }: any) {
   const [bettingType, setBettingType] = useState<'2D' | '3D'>('2D');
   const [session, setSession] = useState(autoSession);
   const [bettingData, setBettingData] = useState('');
+  
+  // Local သိမ်းမည့် State များ
+  const [localName, setLocalName] = useState('');
+  const [localPaymentType, setLocalPaymentType] = useState<'cash' | 'credit'>('cash');
+
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<any>(null);
 
@@ -108,8 +123,11 @@ function SubmitPage({ user, t, lang, showToast, onSuccess }: any) {
     try {
       const response = await fetch(`${API_BASE_URL}/api/submissions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pendingPayload), });
       if (response.ok) {
+        // Admin သို့ပို့ပြီးပါက Local တွင် နာမည်နှင့် ငွေချေစနစ်ကို သိမ်းမည်
+        saveLocalMeta(pendingPayload.id, localName || 'Unknown', localPaymentType);
+        
         showToast(lang === 'my' ? 'စာရင်းပေးပို့ခြင်း အောင်မြင်ပါသည်။' : 'Submitted successfully!');
-        setBettingData(''); onSuccess(); 
+        setBettingData(''); setLocalName(''); setLocalPaymentType('cash'); onSuccess(); 
       } else { alert('Failed to submit.'); }
     } catch (error) { alert('Network error.'); }
   };
@@ -121,6 +139,17 @@ function SubmitPage({ user, t, lang, showToast, onSuccess }: any) {
       <div className="header"><h1>{t.title}</h1><p style={{color: 'var(--text-muted)', fontSize: '14px', marginTop: '5px'}}>{t.hello}, <span style={{fontWeight: 'bold', color: 'var(--primary)'}}>{user.displayName}</span></p></div>
       <div className="card">
         <form onSubmit={handlePreSubmit}>
+          <div className="form-group">
+            <label className="form-label">{t.customerName}</label>
+            <input type="text" className="form-input" value={localName} onChange={e => setLocalName(e.target.value)} placeholder="e.g. Ko Aung" />
+          </div>
+          <div className="form-group">
+            <label className="form-label">{t.paymentType}</label>
+            <div className="toggle-group no-select">
+              <button type="button" className={`toggle-btn ${localPaymentType === 'cash' ? 'active' : ''}`} onClick={() => setLocalPaymentType('cash')}>{t.cash}</button>
+              <button type="button" className={`toggle-btn ${localPaymentType === 'credit' ? 'active' : ''}`} onClick={() => setLocalPaymentType('credit')}>{t.credit}</button>
+            </div>
+          </div>
           <div className="form-group"><label className="form-label">{t.type}</label><div className="toggle-group no-select"><button type="button" className={`toggle-btn ${bettingType === '2D' ? 'active' : ''}`} onClick={() => setBettingType('2D')}>2D (00-99)</button><button type="button" className={`toggle-btn ${bettingType === '3D' ? 'active' : ''}`} onClick={() => setBettingType('3D')}>3D (000-999)</button></div></div>
           <div className="form-group"><label className="form-label">{t.session}</label><div className="toggle-group no-select"><button type="button" className={`toggle-btn ${session === 'morning' ? 'active' : ''}`} onClick={() => setSession('morning')}><Sun size={14}/> {t.morning}</button><button type="button" className={`toggle-btn ${session === 'evening' ? 'active' : ''}`} onClick={() => setSession('evening')}><Moon size={14}/> {t.evening}</button></div></div>
           <div className="form-group"><label className="form-label">{t.betsLabel}</label><textarea className="form-textarea" rows={6} value={bettingData} onChange={e => setBettingData(e.target.value)} placeholder={placeholderHint} required /></div>
@@ -135,7 +164,7 @@ function SubmitPage({ user, t, lang, showToast, onSuccess }: any) {
             <div className="modal-body">
               <p style={{ marginBottom: '12px', color: 'var(--text-muted)' }}>{t.confirmDesc}</p>
               <div style={{ background: 'var(--bg-color)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '12px' }}>
-                <p><strong>{t.type}:</strong> {pendingPayload.betting_type}</p><p><strong>{t.session}:</strong> {pendingPayload.session === 'morning' ? t.morning : t.evening}</p><p style={{ marginTop: '4px' }}><strong>{t.total}:</strong> <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '16px' }}>{pendingPayload.total_amount} MMK</span></p>
+                <p><strong>{t.customerName}:</strong> {localName || 'Unknown'}</p><p><strong>{t.type}:</strong> {pendingPayload.betting_type}</p><p><strong>{t.session}:</strong> {pendingPayload.session === 'morning' ? t.morning : t.evening}</p><p style={{ marginTop: '4px' }}><strong>{t.total}:</strong> <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '16px' }}>{pendingPayload.total_amount} MMK</span></p>
               </div>
               <div style={{ maxHeight: '150px', overflowY: 'auto', padding: '4px 0' }}>
                 <div className="bet-pill-container" style={{ margin: 0, border: 'none', background: 'transparent', padding: 0 }}>
@@ -162,6 +191,9 @@ function MyBetsPage({ user, myBets, fetchMyBets, isRefreshing, t, lang, showToas
 
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [editingBetId, setEditingBetId] = useState<string | null>(null);
+  
+  const [editLocalName, setEditLocalName] = useState('');
+  const [editLocalPaymentType, setEditLocalPaymentType] = useState<'cash'|'credit'>('cash');
   const [editType, setEditType] = useState<'2D' | '3D'>('2D');
   const [editSession, setEditSession] = useState('morning');
   const [editData, setEditData] = useState('');
@@ -198,6 +230,8 @@ function MyBetsPage({ user, myBets, fetchMyBets, isRefreshing, t, lang, showToas
   };
 
   const openEditSheet = (bet: any) => {
+    const meta = getLocalMeta()[bet.id] || { name: '', paymentType: 'cash' };
+    setEditLocalName(meta.name); setEditLocalPaymentType(meta.paymentType);
     setEditingBetId(bet.id); setEditType(bet.betting_type); setEditSession(bet.session);
     const parsed = parseBettingData(bet.betting_data);
     const text = parsed.map((b: any) => `${b.number} ${b.amount}`).join('\n');
@@ -222,6 +256,7 @@ function MyBetsPage({ user, myBets, fetchMyBets, isRefreshing, t, lang, showToas
     try {
       const response = await fetch(`${API_BASE_URL}/api/submissions/${editingBetId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pendingPayload), });
       if (response.ok) {
+        saveLocalMeta(pendingPayload.id, editLocalName || 'Unknown', editLocalPaymentType);
         showToast(lang === 'my' ? 'စာရင်းပေးပို့ခြင်း အောင်မြင်ပါသည်။' : 'Submitted successfully!');
         setEditingBetId(null); setEditData(''); fetchMyBets(true);
       } else { alert('Failed to submit.'); }
@@ -229,8 +264,6 @@ function MyBetsPage({ user, myBets, fetchMyBets, isRefreshing, t, lang, showToas
   };
 
   const filteredBets = myBets.filter((bet: any) => bet.bet_date === historyDate && bet.session === historySession);
-  
-  // တွက်ချက်ထားသော Total Stats
   const totalFilteredAmount = filteredBets.reduce((sum: number, bet: any) => sum + bet.total_amount, 0);
   const totalLists = filteredBets.length;
 
@@ -238,23 +271,17 @@ function MyBetsPage({ user, myBets, fetchMyBets, isRefreshing, t, lang, showToas
     <div className="fade-in">
       <div className="header" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <h1 style={{ margin: 0 }}>{t.historyTitle}</h1>
-        <button onClick={() => fetchMyBets(true)} className="no-select" style={{ position: 'absolute', right: '0', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '8px' }}>
-          <RefreshCw size={22} className={isRefreshing ? 'spin-anim' : ''} />
-        </button>
+        <button onClick={() => fetchMyBets(true)} className="no-select" style={{ position: 'absolute', right: '0', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '8px' }}><RefreshCw size={22} className={isRefreshing ? 'spin-anim' : ''} /></button>
       </div>
 
       <div className="date-bar">
-        <div className="date-btn no-select">
-          <Calendar size={15} /> <span>{historyDate}</span>
-          <input type="date" value={historyDate} onChange={(e) => { if (e.target.value) setHistoryDate(e.target.value); }} style={{ position: 'absolute', opacity: 0, left: 0, top: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
-        </div>
+        <div className="date-btn no-select"><Calendar size={15} /> <span>{historyDate}</span><input type="date" value={historyDate} onChange={(e) => { if (e.target.value) setHistoryDate(e.target.value); }} style={{ position: 'absolute', opacity: 0, left: 0, top: 0, width: '100%', height: '100%', cursor: 'pointer' }} /></div>
       </div>
       <div className="toggle-group no-select" style={{ marginBottom: '16px' }}>
         <button type="button" className={`toggle-btn ${historySession === 'morning' ? 'active' : ''}`} onClick={() => setHistorySession('morning')}><Sun size={14} /> {t.morning}</button>
         <button type="button" className={`toggle-btn ${historySession === 'evening' ? 'active' : ''}`} onClick={() => setHistorySession('evening')}><Moon size={14} /> {t.evening}</button>
       </div>
 
-      {/* အသစ်ထည့်ထားသော Total Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card"><div className="stat-label">{t.totalLists}</div><div className="stat-value">{totalLists}</div></div>
         <div className="stat-card"><div className="stat-label">{t.total}</div><div className="stat-value">{totalFilteredAmount.toLocaleString()}</div></div>
@@ -267,13 +294,25 @@ function MyBetsPage({ user, myBets, fetchMyBets, isRefreshing, t, lang, showToas
           <div>
             {filteredBets.map((bet: any) => {
               const entries = parseBettingData(bet.betting_data);
+              const meta = getLocalMeta()[bet.id] || { name: 'Unknown', paymentType: 'cash' };
+
               return (
                 <div key={bet.id} className="bet-list-card">
-                  <div className="bet-header"><span style={{ fontWeight: 'bold', fontSize: '16px' }}>{bet.betting_type}</span><span className={`badge ${bet.status}`}>{bet.status}</span></div>
+                  <div className="bet-header">
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{meta.name}</div>
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                        <span className={`badge ${bet.betting_type === '2D' ? 'badge-accent' : 'badge-info'}`}>{bet.betting_type}</span>
+                        <span className={`badge ${meta.paymentType === 'cash' ? 'badge-success' : 'badge-warning'}`}>{meta.paymentType === 'cash' ? t.cash : t.credit}</span>
+                        <span className={`badge ${bet.status}`}>{bet.status}</span>
+                      </div>
+                    </div>
+                  </div>
                   <div className="bet-pill-container">{entries.map((entry: any, i: number) => <span key={i} className="bet-pill">{entry.number} : <span style={{color: 'var(--primary)'}}>{entry.amount}</span></span>)}</div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', fontSize: '15px', fontWeight: 'bold' }}>
                     <span style={{color: 'var(--text-muted)'}}>{t.total}</span><span style={{color: 'var(--primary)'}}>{bet.total_amount.toLocaleString()} MMK</span>
                   </div>
+
                   {bet.status === 'rejected' && (
                     <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                       {bet.reason && <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}><strong style={{ display: 'block', marginBottom: '4px' }}>{t.rejectReason}:</strong>{bet.reason}</div>}
@@ -287,12 +326,13 @@ function MyBetsPage({ user, myBets, fetchMyBets, isRefreshing, t, lang, showToas
         )}
       </div>
 
-      {/* Edit and Confirm Modals (Same as before) */}
       {showEditSheet && (
         <div className="bottom-sheet-overlay" onClick={() => setShowEditSheet(false)}>
           <div className="bottom-sheet-content" onClick={e => e.stopPropagation()}>
             <h2 style={{ fontSize: '18px', marginBottom: '16px', color: 'var(--text-main)' }}>{t.editList}</h2>
             <form onSubmit={handlePreSubmit}>
+              <div className="form-group"><label className="form-label">{t.customerName}</label><input type="text" className="form-input" value={editLocalName} onChange={e => setEditLocalName(e.target.value)} /></div>
+              <div className="form-group"><label className="form-label">{t.paymentType}</label><div className="toggle-group no-select"><button type="button" className={`toggle-btn ${editLocalPaymentType === 'cash' ? 'active' : ''}`} onClick={() => setEditLocalPaymentType('cash')}>{t.cash}</button><button type="button" className={`toggle-btn ${editLocalPaymentType === 'credit' ? 'active' : ''}`} onClick={() => setEditLocalPaymentType('credit')}>{t.credit}</button></div></div>
               <div className="form-group"><label className="form-label">{t.type}</label><div className="toggle-group no-select"><button type="button" className={`toggle-btn ${editType === '2D' ? 'active' : ''}`} onClick={() => setEditType('2D')}>2D</button><button type="button" className={`toggle-btn ${editType === '3D' ? 'active' : ''}`} onClick={() => setEditType('3D')}>3D</button></div></div>
               <div className="form-group"><label className="form-label">{t.session}</label><div className="toggle-group no-select"><button type="button" className={`toggle-btn ${editSession === 'morning' ? 'active' : ''}`} onClick={() => setEditSession('morning')}><Sun size={14}/> {t.morning}</button><button type="button" className={`toggle-btn ${editSession === 'evening' ? 'active' : ''}`} onClick={() => setEditSession('evening')}><Moon size={14}/> {t.evening}</button></div></div>
               <div className="form-group"><label className="form-label">{t.betsLabel}</label><textarea className="form-textarea" rows={5} value={editData} onChange={e => setEditData(e.target.value)} required /></div>
@@ -309,7 +349,7 @@ function MyBetsPage({ user, myBets, fetchMyBets, isRefreshing, t, lang, showToas
             <div className="modal-body">
               <p style={{ marginBottom: '12px', color: 'var(--text-muted)' }}>{t.confirmDesc}</p>
               <div style={{ background: 'var(--bg-color)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '12px' }}>
-                <p><strong>{t.type}:</strong> {pendingPayload.betting_type}</p><p><strong>{t.session}:</strong> {pendingPayload.session === 'morning' ? t.morning : t.evening}</p><p style={{ marginTop: '4px' }}><strong>{t.total}:</strong> <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '16px' }}>{pendingPayload.total_amount} MMK</span></p>
+                <p><strong>{t.customerName}:</strong> {editLocalName || 'Unknown'}</p><p><strong>{t.type}:</strong> {pendingPayload.betting_type}</p><p><strong>{t.session}:</strong> {pendingPayload.session === 'morning' ? t.morning : t.evening}</p><p style={{ marginTop: '4px' }}><strong>{t.total}:</strong> <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '16px' }}>{pendingPayload.total_amount} MMK</span></p>
               </div>
             </div>
             <div className="modal-actions no-select"><button type="button" className="btn btn-primary" onClick={handleFinalSubmit}>{t.confirmBtn}</button><button type="button" className="btn btn-secondary" onClick={() => { setShowConfirm(false); setShowEditSheet(true); }}>{t.cancel}</button></div>
@@ -321,7 +361,7 @@ function MyBetsPage({ user, myBets, fetchMyBets, isRefreshing, t, lang, showToas
 }
 
 // ==========================================
-// 3. WINNERS PAGE COMPONENT (အသစ်)
+// 3. WINNERS PAGE COMPONENT (Admin ပုံစံ Name List ဖြင့်ပြမည်)
 // ==========================================
 function WinnersPage({ myBets, t, lang }: any) {
   const currentHour = new Date().getHours();
@@ -331,22 +371,22 @@ function WinnersPage({ myBets, t, lang }: any) {
   const [bettingType, setBettingType] = useState<'2D' | '3D'>('2D');
   const [winningNumber, setWinningNumber] = useState('');
   const [searched, setSearched] = useState(false);
-  const [totalWon, setTotalWon] = useState(0);
+  const [winnersList, setWinnersList] = useState<any[]>([]);
 
   const handleSearch = () => {
     if (!winningNumber.trim()) return;
     const numStr = winningNumber.trim();
     const isValid = bettingType === '2D' ? /^\d{2}$/.test(numStr) : /^\d{3}$/.test(numStr);
     
-    if (!isValid) {
-      alert(bettingType === '2D' ? 'Enter valid 2D (00-99)' : 'Enter valid 3D (000-999)'); return;
-    }
+    if (!isValid) { alert(bettingType === '2D' ? 'Enter valid 2D (00-99)' : 'Enter valid 3D (000-999)'); return; }
 
     const filteredBets = myBets.filter((bet: any) => bet.bet_date === historyDate && bet.session === historySession && bet.betting_type === bettingType && bet.status === 'approved');
-    let wonAmount = 0;
+    const localMeta = getLocalMeta();
+    const list: any[] = [];
 
     filteredBets.forEach((bet: any) => {
       const parsed = parseBettingData(bet.betting_data);
+      let wonAmount = 0;
       parsed.forEach((entry: any) => {
         const enNum = String(entry.number);
         const enAmtStr = String(entry.amount).toUpperCase();
@@ -364,9 +404,13 @@ function WinnersPage({ myBets, t, lang }: any) {
           if (perms.has(numStr) && numStr !== enNum) { wonAmount += pureAmount; }
         }
       });
+
+      if (wonAmount > 0) {
+        list.push({ bet, meta: localMeta[bet.id] || { name: 'Unknown', paymentType: 'cash' }, wonAmount });
+      }
     });
 
-    setTotalWon(wonAmount);
+    setWinnersList(list);
     setSearched(true);
   };
 
@@ -398,18 +442,33 @@ function WinnersPage({ myBets, t, lang }: any) {
       </div>
 
       {searched && (
-        <div className="card" style={{ textAlign: 'center', padding: '30px 20px' }}>
-          <Trophy size={48} color={totalWon > 0 ? "var(--primary)" : "var(--text-muted)"} style={{ margin: '0 auto 16px', opacity: totalWon > 0 ? 1 : 0.5 }} />
-          {totalWon > 0 ? (
-            <div>
-              <h2 style={{ color: 'var(--text-main)', marginBottom: '8px' }}>Congratulations!</h2>
-              <p style={{ color: 'var(--text-muted)', marginBottom: '16px' }}>{t.winAmount}</p>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: 'var(--primary)' }}>{totalWon.toLocaleString()} MMK</div>
+        <div>
+          {winnersList.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '30px 20px' }}>
+              <Trophy size={48} color="var(--text-muted)" style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+              <h3 style={{ color: 'var(--text-main)', marginBottom: '8px' }}>No winners found</h3>
+              <p style={{ color: 'var(--text-muted)' }}>{t.noWinners}</p>
             </div>
           ) : (
             <div>
-              <h3 style={{ color: 'var(--text-main)', marginBottom: '8px' }}>No winners found</h3>
-              <p style={{ color: 'var(--text-muted)' }}>{t.noWinners}</p>
+              <p style={{ fontWeight: 'bold', marginBottom: '12px', color: 'var(--text-main)' }}>{winnersList.length} winner{winnersList.length > 1 ? 's' : ''} for #{winningNumber}</p>
+              {winnersList.map((w, idx) => (
+                <div key={idx} className="bet-list-card">
+                  <div className="bet-header">
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{w.meta.name}</div>
+                      <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                        <span className={`badge ${w.bet.betting_type === '2D' ? 'badge-accent' : 'badge-info'}`}>{w.bet.betting_type}</span>
+                        <span className={`badge ${w.meta.paymentType === 'cash' ? 'badge-success' : 'badge-warning'}`}>{w.meta.paymentType === 'cash' ? t.cash : t.credit}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', fontSize: '15px', fontWeight: 'bold' }}>
+                    <span style={{color: 'var(--text-muted)'}}>Bet on #{winningNumber}:</span>
+                    <span style={{color: 'var(--primary)'}}>{w.wonAmount.toLocaleString()} MMK</span>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -474,7 +533,6 @@ export default function App() {
   const t = translations[lang];
   const [toastMsg, setToastMsg] = useState('');
   
-  // Lifted state for MyBets to share with WinnersPage
   const [myBets, setMyBets] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
