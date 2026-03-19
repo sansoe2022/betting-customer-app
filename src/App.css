@@ -17,13 +17,26 @@
   --modal-overlay: rgba(0, 0, 0, 0.7);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; }
-body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 80px; transition: background-color 0.3s ease; }
+* { 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
+  font-family: sans-serif; 
+  -webkit-tap-highlight-color: transparent; /* Click နှိပ်လျှင် အရိပ်မပေါ်စေရန် */
+}
+
+body { 
+  background-color: var(--bg-color); 
+  color: var(--text-main); 
+  padding-bottom: 80px; 
+  transition: background-color 0.3s ease; 
+  overscroll-behavior-y: none; /* Pull-to-refresh ပိတ်ရန် */
+}
+
 .container { max-width: 500px; margin: 0 auto; padding: 16px; }
-.header { text-align: center; margin-bottom: 20px; padding-top: 10px; }
+.header { text-align: center; margin-bottom: 20px; padding-top: 10px; position: relative; }
 .header h1 { font-size: 22px; color: var(--primary); margin-bottom: 4px; }
 
-/* Click နှိပ်လျှင် Select မဖြစ်အောင် တားခြင်း */
 .no-select { user-select: none; -webkit-user-select: none; }
 
 .card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); }
@@ -37,7 +50,6 @@ body { background-color: var(--bg-color); color: var(--text-main); padding-botto
 .btn-danger { background: #ef4444; color: white; }
 .btn-secondary { background: var(--bg-color); color: var(--text-main); border: 1px solid var(--border); }
 
-/* Admin-like Tabs / Toggle Groups */
 .toggle-group { display: flex; background: var(--bg-color); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
 .toggle-btn { flex: 1; padding: 12px; border: none; background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s; font-size: 14px; }
 .toggle-btn.active { background: var(--primary); color: white; }
@@ -56,7 +68,6 @@ body { background-color: var(--bg-color); color: var(--text-main); padding-botto
 .bet-pill-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px dashed var(--border); }
 .bet-pill { background: var(--card-bg); padding: 6px 12px; border-radius: 20px; font-size: 14px; border: 1px solid var(--border); color: var(--text-main); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-/* Settings */
 .settings-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
 .settings-item:last-child { border-bottom: none; }
 .settings-icon-bg { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
@@ -76,13 +87,11 @@ input:checked + .switch-track:before { transform: translateX(20px); }
 .nav-item.active { color: var(--primary); }
 .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; }
 
-/* Custom Modal Box */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; backdrop-filter: blur(2px); }
 .modal-content { background: var(--card-bg); width: 100%; max-width: 400px; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: slideUp 0.3s ease; border: 1px solid var(--border); }
 .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 12px; color: var(--text-main); }
-.modal-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; } /* Changed to column & added margin-top for breathing room */
+.modal-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; } 
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-/* Toast Notification */
 .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; display: flex; align-items: center; gap: 8px; font-size: 14px; animation: slideDown 0.3s ease; }
 @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
