@@ -20,7 +20,7 @@ const translations = {
     cancel: "Cancel", confirmBtn: "Confirm & Send",
     logoutConfirmTitle: "Confirm Logout", logoutConfirmDesc: "Are you sure you want to log out?",
     rejectReason: "Reason for rejection",
-    editResubmit: "Edit & Resubmit", editList: "Edit List", cancelEdit: "Cancel Edit", editingNotice: "You are editing a rejected list."
+    editResubmit: "Edit & Resubmit", editList: "Edit List", cancelEdit: "Cancel Edit"
   },
   my: {
     submitTab: "စာရင်းပို့ရန်", historyTab: "မှတ်တမ်း", settingsTab: "ဆက်တင်",
@@ -35,7 +35,7 @@ const translations = {
     cancel: "ပယ်ဖျက်မည်", confirmBtn: "အတည်ပြုပြီး ပို့မည်",
     logoutConfirmTitle: "အကောင့်ထွက်ရန်", logoutConfirmDesc: "အကောင့်မှ ထွက်မှာ သေချာပါသလား?",
     rejectReason: "ပယ်ဖျက်ရသည့် အကြောင်းရင်း",
-    editResubmit: "ပြင်ဆင်ပြီး ပြန်ပို့မည်", editList: "စာရင်း ပြင်ဆင်ရန်", cancelEdit: "ပယ်ဖျက်မည်", editingNotice: "သင်သည် ပယ်ချခံထားရသော စာရင်းကို ပြင်ဆင်နေပါသည်။"
+    editResubmit: "ပြင်ဆင်ပြီး ပြန်ပို့မည်", editList: "စာရင်း ပြင်ဆင်ရန်", cancelEdit: "ပယ်ဖျက်မည်"
   }
 };
 
@@ -55,9 +55,6 @@ export default function App() {
   const [session, setSession] = useState(autoSession);
   const [bettingData, setBettingData] = useState('');
   
-  // ပြင်ဆင်ရန် State အသစ်
-  const [editingBetId, setEditingBetId] = useState<string | null>(null);
-
   const [historyDate, setHistoryDate] = useState(new Date().toISOString().split('T')[0]);
   const [historySession, setHistorySession] = useState(autoSession);
   const [myBets, setMyBets] = useState<any[]>([]);
@@ -66,6 +63,9 @@ export default function App() {
   const [editName, setEditName] = useState('');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
 
+  // Bottom Sheet နှင့် Modals States
+  const [showEditSheet, setShowEditSheet] = useState(false);
+  const [editingBetId, setEditingBetId] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<any>(null);
@@ -108,11 +108,17 @@ export default function App() {
   };
 
   const fetchMyBets = async (userId: string) => {
-    setIsRefreshing(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/submissions/my-bets?user_id=${userId}`);
       if (response.ok) { const data = await response.json(); setMyBets(data); }
-    } catch (error) { console.error('Error fetching bets:', error); } finally { setIsRefreshing(false); }
+    } catch (error) { console.error('Error fetching bets:', error); }
+  };
+
+  const handleManualRefresh = async () => {
+    if (!user) return;
+    setIsRefreshing(true);
+    await fetchMyBets(user.uid);
+    setTimeout(() => setIsRefreshing(false), 2000); // ၂ စက္ကန့် အဝိုင်းလည်မည်
   };
 
   const calculateTotal = (text: string) => {
@@ -148,18 +154,19 @@ export default function App() {
     return Array.isArray(data) ? data : [];
   };
 
-  // Reject ခံရသော စာရင်းကို ပြန်ပြင်ရန် Form ထဲသို့ ထည့်ခြင်း
-  const handleEditRejected = (bet: any) => {
+  // Reject ခံရသော စာရင်းကို Bottom Sheet ဖြင့် ပြင်ဆင်ရန်
+  const openEditSheet = (bet: any) => {
     setEditingBetId(bet.id);
     setBettingType(bet.betting_type);
     setSession(bet.session);
     const parsed = parseBettingData(bet.betting_data);
     const text = parsed.map((b: any) => `${b.number} ${b.amount}`).join('\n');
     setBettingData(text);
-    setActiveTab('submit');
+    setShowEditSheet(true); // Bottom Sheet ဖွင့်မည်
   };
 
-  const cancelEdit = () => {
+  const closeEditSheet = () => {
+    setShowEditSheet(false);
     setEditingBetId(null);
     setBettingData('');
   };
@@ -184,7 +191,6 @@ export default function App() {
     setShowConfirm(true); 
   };
 
-  // အသစ်ပို့ခြင်းနှင့် ပြန်လည်ပြင်ဆင်ပို့ခြင်း နှစ်မျိုးလုံးကို လုပ်ဆောင်မည်
   const handleFinalSubmit = async () => {
     if (!pendingPayload) return;
     setShowConfirm(false);
@@ -201,7 +207,7 @@ export default function App() {
       if (response.ok) {
         showToast(lang === 'my' ? 'စာရင်းပေးပို့ခြင်း အောင်မြင်ပါသည်။' : 'Submitted successfully!');
         setBettingData('');
-        setEditingBetId(null); // Edit Mode ကို ပိတ်မည်
+        if (isEdit) closeEditSheet(); // ပြင်ဆင်ပြီးပါက Bottom Sheet ပိတ်မည်
         fetchMyBets(user!.uid); 
         setActiveTab('history'); 
       } else { alert('Failed to submit.'); }
@@ -232,19 +238,11 @@ export default function App() {
         {activeTab === 'submit' && (
           <div className="fade-in">
             <div className="header">
-              <h1>{editingBetId ? t.editList : t.title}</h1>
+              <h1>{t.title}</h1>
               <p style={{color: 'var(--text-muted)', fontSize: '14px', marginTop: '5px'}}>
                 {t.hello}, <span style={{fontWeight: 'bold', color: 'var(--primary)'}}>{customerName}</span>
               </p>
             </div>
-            
-            {/* Edit Mode သတိပေးစာ */}
-            {editingBetId && (
-              <div style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '12px', borderRadius: '10px', marginBottom: '16px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-                <span>{t.editingNotice}</span>
-                <button type="button" onClick={cancelEdit} className="no-select" style={{ background: 'transparent', border: 'none', color: '#dc2626', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>{t.cancelEdit}</button>
-              </div>
-            )}
 
             <div className="card">
               <form onSubmit={handlePreSubmit}>
@@ -281,8 +279,8 @@ export default function App() {
           <div className="fade-in">
             <div className="header" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <h1 style={{ margin: 0 }}>{t.historyTitle}</h1>
-              <button onClick={() => fetchMyBets(user.uid)} className="no-select" style={{ position: 'absolute', right: '0', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '8px' }}>
-                <RefreshCw size={22} className={isRefreshing ? 'spin' : ''} />
+              <button onClick={handleManualRefresh} className="no-select" style={{ position: 'absolute', right: '0', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '8px' }}>
+                <RefreshCw size={22} className={isRefreshing ? 'spin-anim' : ''} />
               </button>
             </div>
 
@@ -320,7 +318,6 @@ export default function App() {
                           <span style={{color: 'var(--primary)'}}>{bet.total_amount} MMK</span>
                         </div>
 
-                        {/* Rejected ဖြစ်ပါက အကြောင်းပြချက်နှင့် ပြန်ပြင်မည့်ခလုတ် ပြသခြင်း */}
                         {bet.status === 'rejected' && (
                           <div style={{ marginTop: '14px' }}>
                             {bet.reason && (
@@ -329,7 +326,7 @@ export default function App() {
                                 {bet.reason}
                               </div>
                             )}
-                            <button type="button" className="btn btn-primary no-select" style={{ padding: '10px', fontSize: '14px', background: '#3b82f6' }} onClick={() => handleEditRejected(bet)}>
+                            <button type="button" className="btn btn-primary no-select" style={{ padding: '10px', fontSize: '14px', background: '#3b82f6' }} onClick={() => openEditSheet(bet)}>
                               <Edit2 size={16} /> {t.editResubmit}
                             </button>
                           </div>
@@ -412,6 +409,39 @@ export default function App() {
         <button type="button" className={`nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}><Clock size={22} /><span>{t.historyTab}</span></button>
         <button type="button" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}><Settings size={22} /><span>{t.settingsTab}</span></button>
       </div>
+
+      {/* EDIT BOTTOM SHEET (Rejected မှ ပြန်ပြင်ရန်) */}
+      {showEditSheet && (
+        <div className="bottom-sheet-overlay" onClick={closeEditSheet}>
+          <div className="bottom-sheet-content" onClick={e => e.stopPropagation()}>
+            <h2 style={{ fontSize: '18px', marginBottom: '16px', color: 'var(--text-main)' }}>{t.editList}</h2>
+            <form onSubmit={handlePreSubmit}>
+              <div className="form-group">
+                <label className="form-label">{t.type}</label>
+                <div className="toggle-group no-select">
+                  <button type="button" className={`toggle-btn ${bettingType === '2D' ? 'active' : ''}`} onClick={() => setBettingType('2D')}>2D</button>
+                  <button type="button" className={`toggle-btn ${bettingType === '3D' ? 'active' : ''}`} onClick={() => setBettingType('3D')}>3D</button>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">{t.session}</label>
+                <div className="toggle-group no-select">
+                  <button type="button" className={`toggle-btn ${session === 'morning' ? 'active' : ''}`} onClick={() => setSession('morning')}><Sun size={14}/> {t.morning}</button>
+                  <button type="button" className={`toggle-btn ${session === 'evening' ? 'active' : ''}`} onClick={() => setSession('evening')}><Moon size={14}/> {t.evening}</button>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">{t.betsLabel}</label>
+                <textarea className="form-textarea" rows={5} value={bettingData} onChange={e => setBettingData(e.target.value)} required />
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="button" className="btn btn-secondary no-select" onClick={closeEditSheet}>{t.cancel}</button>
+                <button type="submit" className="btn btn-primary no-select">{t.submitBtn}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* SUBMIT MODAL */}
       {showConfirm && pendingPayload && (
