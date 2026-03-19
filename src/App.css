@@ -32,23 +32,25 @@ body { background-color: var(--bg-color); color: var(--text-main); padding-botto
 .date-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .date-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--card-bg); border: 1px solid var(--border); padding: 10px; border-radius: 10px; color: var(--text-main); font-weight: 600; cursor: pointer; flex: 1; position: relative; overflow: hidden; }
 
-/* Stats Grid for History */
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
 .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; text-align: center; }
 .stat-label { font-size: 12px; color: var(--text-muted); font-weight: bold; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
 .stat-value { font-size: 18px; font-weight: bold; color: var(--primary); }
 
 .bet-list-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.bet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
+.bet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
 .badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; text-transform: uppercase; letter-spacing: 0.5px;}
 .badge.pending { background: #f59e0b; }
 .badge.approved { background: #10b981; }
 .badge.rejected { background: #ef4444; }
+.badge-success { background: #10b981; }
+.badge-warning { background: #f59e0b; }
+.badge-info { background: #3b82f6; }
+.badge-accent { background: #8b5cf6; }
 
 .bet-pill-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px dashed var(--border); }
 .bet-pill { background: var(--card-bg); padding: 6px 12px; border-radius: 20px; font-size: 14px; border: 1px solid var(--border); color: var(--text-main); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-/* Winner Search Box */
 .search-box { position: relative; display: flex; align-items: center; }
 .search-box svg { position: absolute; left: 12px; color: var(--text-muted); }
 
@@ -67,7 +69,7 @@ input:checked + .switch-track:before { transform: translateX(20px); }
 .lang-btn.active { background: var(--primary); color: white; }
 
 .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 12px 0; z-index: 100; max-width: 500px; margin: 0 auto; box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); }
-.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: transparent; gap: 6px; width: 25%; } /* ပြင်ဆင်ထားသည် 25% */
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: transparent; gap: 6px; width: 25%; }
 .nav-item.active { color: var(--primary); }
 .login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; text-align: center; }
 
