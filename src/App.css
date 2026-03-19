@@ -32,13 +32,15 @@ body { background-color: var(--bg-color); color: var(--text-main); padding-botto
 .date-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .date-btn { display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--card-bg); border: 1px solid var(--border); padding: 10px; border-radius: 10px; color: var(--text-main); font-weight: 600; cursor: pointer; flex: 1; position: relative; overflow: hidden; }
 
-.bet-list-item { border-bottom: 1px dashed var(--border); padding-bottom: 16px; margin-bottom: 16px; }
-.bet-list-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-.bet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+/* My Bets အတွက် Card View ဒီဇိုင်းအသစ် */
+.bet-list-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.bet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
+
 .badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; color: white; text-transform: uppercase; letter-spacing: 0.5px;}
 .badge.pending { background: #f59e0b; }
 .badge.approved { background: #10b981; }
 .badge.rejected { background: #ef4444; }
+
 .bet-pill-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px dashed var(--border); }
 .bet-pill { background: var(--card-bg); padding: 6px 12px; border-radius: 20px; font-size: 14px; border: 1px solid var(--border); color: var(--text-main); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
@@ -67,12 +69,10 @@ input:checked + .switch-track:before { transform: translateX(20px); }
 .modal-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; } 
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-/* Bottom Sheet CSS အသစ် (Customer App အတွက်) */
 .bottom-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); display: flex; align-items: flex-end; z-index: 2000; backdrop-filter: blur(2px); }
 .bottom-sheet-content { background: var(--card-bg); width: 100%; max-width: 500px; margin: 0 auto; border-radius: 20px 20px 0 0; padding: 24px; animation: slideUpSheet 0.3s ease; max-height: 90vh; overflow-y: auto; box-shadow: 0 -10px 25px rgba(0,0,0,0.2); border-top: 1px solid var(--border); }
 @keyframes slideUpSheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-/* Refresh Spin Animation */
 .spin-anim { animation: spin 1s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 
