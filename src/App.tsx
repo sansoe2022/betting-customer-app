@@ -134,6 +134,7 @@ export default function App() {
     }
   };
 
+  // 3D 'R' အတွက် ၆ ကွက်တွက်ပေးမည့် စနစ်အသစ်
   const calculateTotal = (text: string) => {
     let total = 0;
     const entries: any[] = [];
@@ -145,10 +146,22 @@ export default function App() {
         let amountStr = parts[1].toUpperCase();
         let isReverse = amountStr.includes('R');
         let amount = parseInt(amountStr.replace('R', '')) || 0;
+        
         if (amount > 0) {
           entries.push({ number, amount: amountStr });
-          total += amount;
-          if (isReverse) total += amount; 
+          if (isReverse) {
+            const perms = new Set<string>();
+            const getPerms = (str: string, prefix = '') => {
+              if (str.length === 0) perms.add(prefix);
+              for (let i = 0; i < str.length; i++) {
+                getPerms(str.slice(0, i) + str.slice(i + 1), prefix + str[i]);
+              }
+            };
+            getPerms(number);
+            total += amount * perms.size; // ခွေပတ်ဂဏန်း အရေအတွက်နဲ့ မြှောက်ပေးသည်
+          } else {
+            total += amount; 
+          }
         }
       }
     });
@@ -235,7 +248,6 @@ export default function App() {
       )}
 
       <div className="container">
-        {/* TAB 1: SUBMIT LIST */}
         {activeTab === 'submit' && (
           <div className="fade-in">
             <div className="header">
@@ -281,18 +293,17 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 2: MY BETS (HISTORY) */}
         {activeTab === 'history' && (
           <div className="fade-in">
-            <div className="header" style={{ position: 'relative' }}>
-              <h1>{t.historyTitle}</h1>
-              {/* My Bets သီးသန့် Refresh ခလုတ် */}
+            {/* Refresh Button ကို Header ထဲမှာ သေချာပေါ်အောင် ပြင်ထားသည် */}
+            <div className="header" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <h1 style={{ margin: 0 }}>{t.historyTitle}</h1>
               <button 
                 onClick={() => fetchMyBets(user.uid)} 
                 className="no-select"
-                style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                style={{ position: 'absolute', right: '0', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '8px' }}
               >
-                <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
+                <RefreshCw size={22} className={isRefreshing ? 'spin' : ''} />
               </button>
             </div>
 
@@ -338,7 +349,7 @@ export default function App() {
                           <span style={{color: 'var(--primary)'}}>{bet.total_amount} MMK</span>
                         </div>
 
-                        {/* Rejected အကြောင်းပြချက် ပေါ်လာမည့်နေရာ */}
+                        {/* Admin ဘက်က ရေးလိုက်တဲ့ Reason ပေါ်မည့်နေရာ */}
                         {bet.status === 'rejected' && bet.reason && (
                           <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: '8px', fontSize: '13px', marginTop: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                             <strong style={{ display: 'block', marginBottom: '4px' }}>{t.rejectReason}:</strong>
@@ -354,7 +365,6 @@ export default function App() {
           </div>
         )}
 
-        {/* TAB 3: SETTINGS */}
         {activeTab === 'settings' && (
           <div className="fade-in">
             <div className="header">
@@ -459,7 +469,7 @@ export default function App() {
         </button>
       </div>
 
-      {/* SUBMIT CONFIRMATION MODAL */}
+      {/* SUBMIT MODAL */}
       {showConfirm && pendingPayload && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -492,7 +502,7 @@ export default function App() {
         </div>
       )}
 
-      {/* LOGOUT CONFIRMATION MODAL */}
+      {/* LOGOUT MODAL */}
       {showLogoutConfirm && (
         <div className="modal-overlay">
           <div className="modal-content">
