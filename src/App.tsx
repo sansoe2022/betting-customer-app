@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, googleProvider } from './firebase';
 import { signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, updateProfile, User } from 'firebase/auth';
-import { Home, Clock, Settings, LogOut, CheckCircle, UserCircle, Calendar, Sun, Moon, Globe, Mail, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Home, Clock, Settings, LogOut, CheckCircle, UserCircle, Calendar, Sun, Moon, Globe, Mail, AlertTriangle, RefreshCw, Edit2 } from 'lucide-react';
 import './App.css';
 
 const API_BASE_URL = 'https://betting-api-worker.sansoe5227.workers.dev'; 
@@ -19,7 +19,8 @@ const translations = {
     confirmTitle: "Confirm Submission", confirmDesc: "Please review your list before submitting.",
     cancel: "Cancel", confirmBtn: "Confirm & Send",
     logoutConfirmTitle: "Confirm Logout", logoutConfirmDesc: "Are you sure you want to log out?",
-    rejectReason: "Reason for rejection"
+    rejectReason: "Reason for rejection",
+    editResubmit: "Edit & Resubmit", editList: "Edit List", cancelEdit: "Cancel Edit", editingNotice: "You are editing a rejected list."
   },
   my: {
     submitTab: "စာရင်းပို့ရန်", historyTab: "မှတ်တမ်း", settingsTab: "ဆက်တင်",
@@ -33,7 +34,8 @@ const translations = {
     confirmTitle: "စာရင်းအတည်ပြုရန်", confirmDesc: "မပို့မီ အောက်ပါအချက်အလက်များကို သေချာစစ်ဆေးပါ။",
     cancel: "ပယ်ဖျက်မည်", confirmBtn: "အတည်ပြုပြီး ပို့မည်",
     logoutConfirmTitle: "အကောင့်ထွက်ရန်", logoutConfirmDesc: "အကောင့်မှ ထွက်မှာ သေချာပါသလား?",
-    rejectReason: "ပယ်ဖျက်ရသည့် အကြောင်းရင်း"
+    rejectReason: "ပယ်ဖျက်ရသည့် အကြောင်းရင်း",
+    editResubmit: "ပြင်ဆင်ပြီး ပြန်ပို့မည်", editList: "စာရင်း ပြင်ဆင်ရန်", cancelEdit: "ပယ်ဖျက်မည်", editingNotice: "သင်သည် ပယ်ချခံထားရသော စာရင်းကို ပြင်ဆင်နေပါသည်။"
   }
 };
 
@@ -53,6 +55,9 @@ export default function App() {
   const [session, setSession] = useState(autoSession);
   const [bettingData, setBettingData] = useState('');
   
+  // ပြင်ဆင်ရန် State အသစ်
+  const [editingBetId, setEditingBetId] = useState<string | null>(null);
+
   const [historyDate, setHistoryDate] = useState(new Date().toISOString().split('T')[0]);
   const [historySession, setHistorySession] = useState(autoSession);
   const [myBets, setMyBets] = useState<any[]>([]);
@@ -66,17 +71,12 @@ export default function App() {
   const [pendingPayload, setPendingPayload] = useState<any>(null);
   const [toastMsg, setToastMsg] = useState('');
 
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(''), 3000);
-  };
+  const showToast = (msg: string) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 3000); };
 
   useEffect(() => { localStorage.setItem('app_lang', lang); }, [lang]);
-
   useEffect(() => {
     localStorage.setItem('app_dark_mode', String(isDarkMode));
-    if (isDarkMode) document.body.classList.add('dark');
-    else document.body.classList.remove('dark');
+    if (isDarkMode) document.body.classList.add('dark'); else document.body.classList.remove('dark');
   }, [isDarkMode]);
 
   useEffect(() => {
@@ -93,16 +93,8 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = async () => {
-    try { await signInWithRedirect(auth, googleProvider); } 
-    catch (error) { alert('Login error'); }
-  };
-
-  const executeLogout = () => {
-    signOut(auth);
-    setMyBets([]);
-    setShowLogoutConfirm(false);
-  };
+  const handleLogin = async () => { try { await signInWithRedirect(auth, googleProvider); } catch (error) { alert('Login error'); } };
+  const executeLogout = () => { signOut(auth); setMyBets([]); setShowLogoutConfirm(false); };
 
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,29 +104,17 @@ export default function App() {
       await updateProfile(user, { displayName: editName });
       setCustomerName(editName);
       showToast(lang === 'my' ? 'နာမည် ပြောင်းလဲခြင်း အောင်မြင်ပါသည်။' : 'Name updated successfully!');
-    } catch (error) {
-      alert('Error updating name.');
-    } finally {
-      setIsUpdatingName(false);
-    }
+    } catch (error) { alert('Error updating name.'); } finally { setIsUpdatingName(false); }
   };
 
   const fetchMyBets = async (userId: string) => {
     setIsRefreshing(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/submissions/my-bets?user_id=${userId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setMyBets(data);
-      }
-    } catch (error) {
-      console.error('Error fetching bets:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
+      if (response.ok) { const data = await response.json(); setMyBets(data); }
+    } catch (error) { console.error('Error fetching bets:', error); } finally { setIsRefreshing(false); }
   };
 
-  // 3D 'R' အတွက် ၆ ကွက်တွက်ပေးမည့် စနစ်အသစ်
   const calculateTotal = (text: string) => {
     let total = 0;
     const entries: any[] = [];
@@ -146,26 +126,42 @@ export default function App() {
         let amountStr = parts[1].toUpperCase();
         let isReverse = amountStr.includes('R');
         let amount = parseInt(amountStr.replace('R', '')) || 0;
-        
         if (amount > 0) {
           entries.push({ number, amount: amountStr });
           if (isReverse) {
             const perms = new Set<string>();
             const getPerms = (str: string, prefix = '') => {
               if (str.length === 0) perms.add(prefix);
-              for (let i = 0; i < str.length; i++) {
-                getPerms(str.slice(0, i) + str.slice(i + 1), prefix + str[i]);
-              }
+              for (let i = 0; i < str.length; i++) getPerms(str.slice(0, i) + str.slice(i + 1), prefix + str[i]);
             };
             getPerms(number);
-            total += amount * perms.size; // ခွေပတ်ဂဏန်း အရေအတွက်နဲ့ မြှောက်ပေးသည်
-          } else {
-            total += amount; 
-          }
+            total += amount * perms.size;
+          } else { total += amount; }
         }
       }
     });
     return { total, entries };
+  };
+
+  const parseBettingData = (data: any) => {
+    if (typeof data === 'string') { try { return JSON.parse(data); } catch { return []; } }
+    return Array.isArray(data) ? data : [];
+  };
+
+  // Reject ခံရသော စာရင်းကို ပြန်ပြင်ရန် Form ထဲသို့ ထည့်ခြင်း
+  const handleEditRejected = (bet: any) => {
+    setEditingBetId(bet.id);
+    setBettingType(bet.betting_type);
+    setSession(bet.session);
+    const parsed = parseBettingData(bet.betting_data);
+    const text = parsed.map((b: any) => `${b.number} ${b.amount}`).join('\n');
+    setBettingData(text);
+    setActiveTab('submit');
+  };
+
+  const cancelEdit = () => {
+    setEditingBetId(null);
+    setBettingData('');
   };
 
   const handlePreSubmit = (e: React.FormEvent) => {
@@ -173,10 +169,7 @@ export default function App() {
     if (!user || !bettingData.trim()) return;
 
     const { total, entries } = calculateTotal(bettingData);
-    if (total === 0) {
-      alert(lang === 'my' ? 'ပုံစံမှားယွင်းနေပါသည်။' : 'Invalid format.');
-      return;
-    }
+    if (total === 0) { alert(lang === 'my' ? 'ပုံစံမှားယွင်းနေပါသည်။' : 'Invalid format.'); return; }
 
     setPendingPayload({
       id: `sub_${Date.now()}`,
@@ -191,35 +184,28 @@ export default function App() {
     setShowConfirm(true); 
   };
 
+  // အသစ်ပို့ခြင်းနှင့် ပြန်လည်ပြင်ဆင်ပို့ခြင်း နှစ်မျိုးလုံးကို လုပ်ဆောင်မည်
   const handleFinalSubmit = async () => {
     if (!pendingPayload) return;
     setShowConfirm(false);
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/submissions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(pendingPayload),
+      const isEdit = !!editingBetId;
+      const url = isEdit ? `${API_BASE_URL}/api/submissions/${editingBetId}` : `${API_BASE_URL}/api/submissions`;
+      const method = isEdit ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pendingPayload),
       });
 
       if (response.ok) {
         showToast(lang === 'my' ? 'စာရင်းပေးပို့ခြင်း အောင်မြင်ပါသည်။' : 'Submitted successfully!');
         setBettingData('');
+        setEditingBetId(null); // Edit Mode ကို ပိတ်မည်
         fetchMyBets(user!.uid); 
         setActiveTab('history'); 
-      } else {
-        alert('Failed to submit.');
-      }
-    } catch (error) {
-      alert('Network error.');
-    }
-  };
-
-  const parseBettingData = (data: any) => {
-    if (typeof data === 'string') {
-      try { return JSON.parse(data); } catch { return []; }
-    }
-    return Array.isArray(data) ? data : [];
+      } else { alert('Failed to submit.'); }
+    } catch (error) { alert('Network error.'); }
   };
 
   const filteredBets = myBets.filter(bet => bet.bet_date === historyDate && bet.session === historySession);
@@ -232,30 +218,34 @@ export default function App() {
       <div className="container login-screen">
         <h1 style={{ color: 'var(--primary)', marginBottom: '10px', fontSize: '28px' }}>Lucky 2D/3D</h1>
         <p style={{ color: 'var(--text-muted)', marginBottom: '30px' }}>Sign in to submit your list.</p>
-        <button className="btn btn-primary no-select" onClick={handleLogin}>
-          Sign in with Google
-        </button>
+        <button className="btn btn-primary no-select" onClick={handleLogin}>Sign in with Google</button>
       </div>
     );
   }
 
   return (
     <>
-      {toastMsg && (
-        <div className="toast-container">
-          <CheckCircle size={18} /> {toastMsg}
-        </div>
-      )}
+      {toastMsg && <div className="toast-container"><CheckCircle size={18} /> {toastMsg}</div>}
 
       <div className="container">
+        {/* TAB 1: SUBMIT LIST */}
         {activeTab === 'submit' && (
           <div className="fade-in">
             <div className="header">
-              <h1>{t.title}</h1>
+              <h1>{editingBetId ? t.editList : t.title}</h1>
               <p style={{color: 'var(--text-muted)', fontSize: '14px', marginTop: '5px'}}>
                 {t.hello}, <span style={{fontWeight: 'bold', color: 'var(--primary)'}}>{customerName}</span>
               </p>
             </div>
+            
+            {/* Edit Mode သတိပေးစာ */}
+            {editingBetId && (
+              <div style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#d97706', padding: '12px', borderRadius: '10px', marginBottom: '16px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                <span>{t.editingNotice}</span>
+                <button type="button" onClick={cancelEdit} className="no-select" style={{ background: 'transparent', border: 'none', color: '#dc2626', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>{t.cancelEdit}</button>
+              </div>
+            )}
+
             <div className="card">
               <form onSubmit={handlePreSubmit}>
                 <div className="form-group">
@@ -276,14 +266,7 @@ export default function App() {
 
                 <div className="form-group">
                   <label className="form-label">{t.betsLabel}</label>
-                  <textarea 
-                    className="form-textarea" 
-                    rows={6} 
-                    value={bettingData} 
-                    onChange={e => setBettingData(e.target.value)} 
-                    placeholder={placeholderHint}
-                    required 
-                  />
+                  <textarea className="form-textarea" rows={6} value={bettingData} onChange={e => setBettingData(e.target.value)} placeholder={placeholderHint} required />
                 </div>
                 <button type="submit" className="btn btn-primary no-select">
                   <CheckCircle size={18} /> {t.submitBtn}
@@ -293,24 +276,19 @@ export default function App() {
           </div>
         )}
 
+        {/* TAB 2: MY BETS (HISTORY) */}
         {activeTab === 'history' && (
           <div className="fade-in">
-            {/* Refresh Button ကို Header ထဲမှာ သေချာပေါ်အောင် ပြင်ထားသည် */}
             <div className="header" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <h1 style={{ margin: 0 }}>{t.historyTitle}</h1>
-              <button 
-                onClick={() => fetchMyBets(user.uid)} 
-                className="no-select"
-                style={{ position: 'absolute', right: '0', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '8px' }}
-              >
+              <button onClick={() => fetchMyBets(user.uid)} className="no-select" style={{ position: 'absolute', right: '0', background: 'transparent', border: 'none', color: 'var(--primary)', cursor: 'pointer', padding: '8px' }}>
                 <RefreshCw size={22} className={isRefreshing ? 'spin' : ''} />
               </button>
             </div>
 
             <div className="date-bar">
               <div className="date-btn no-select">
-                <Calendar size={15} />
-                <span>{historyDate}</span>
+                <Calendar size={15} /> <span>{historyDate}</span>
                 <input type="date" value={historyDate} onChange={(e) => { if (e.target.value) setHistoryDate(e.target.value); }} style={{ position: 'absolute', opacity: 0, left: 0, top: 0, width: '100%', height: '100%', cursor: 'pointer' }} />
               </div>
             </div>
@@ -321,10 +299,7 @@ export default function App() {
 
             <div className="card">
               {filteredBets.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)' }}>
-                  <Clock size={40} style={{ opacity: 0.5, marginBottom: 10, margin: '0 auto' }} />
-                  <p>{t.noRecords}</p>
-                </div>
+                <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)' }}><Clock size={40} style={{ opacity: 0.5, marginBottom: 10, margin: '0 auto' }} /><p>{t.noRecords}</p></div>
               ) : (
                 <div>
                   {filteredBets.map(bet => {
@@ -337,11 +312,7 @@ export default function App() {
                         </div>
                         
                         <div className="bet-pill-container">
-                          {entries.map((entry: any, i: number) => (
-                            <span key={i} className="bet-pill">
-                              {entry.number} : <span style={{color: 'var(--primary)'}}>{entry.amount}</span>
-                            </span>
-                          ))}
+                          {entries.map((entry: any, i: number) => <span key={i} className="bet-pill">{entry.number} : <span style={{color: 'var(--primary)'}}>{entry.amount}</span></span>)}
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '14px', fontWeight: 'bold' }}>
@@ -349,11 +320,18 @@ export default function App() {
                           <span style={{color: 'var(--primary)'}}>{bet.total_amount} MMK</span>
                         </div>
 
-                        {/* Admin ဘက်က ရေးလိုက်တဲ့ Reason ပေါ်မည့်နေရာ */}
-                        {bet.status === 'rejected' && bet.reason && (
-                          <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: '8px', fontSize: '13px', marginTop: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                            <strong style={{ display: 'block', marginBottom: '4px' }}>{t.rejectReason}:</strong>
-                            {bet.reason}
+                        {/* Rejected ဖြစ်ပါက အကြောင်းပြချက်နှင့် ပြန်ပြင်မည့်ခလုတ် ပြသခြင်း */}
+                        {bet.status === 'rejected' && (
+                          <div style={{ marginTop: '14px' }}>
+                            {bet.reason && (
+                              <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: '8px', fontSize: '13px', marginBottom: '10px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                <strong style={{ display: 'block', marginBottom: '4px' }}>{t.rejectReason}:</strong>
+                                {bet.reason}
+                              </div>
+                            )}
+                            <button type="button" className="btn btn-primary no-select" style={{ padding: '10px', fontSize: '14px', background: '#3b82f6' }} onClick={() => handleEditRejected(bet)}>
+                              <Edit2 size={16} /> {t.editResubmit}
+                            </button>
                           </div>
                         )}
                       </div>
@@ -365,39 +343,25 @@ export default function App() {
           </div>
         )}
 
+        {/* TAB 3: SETTINGS */}
         {activeTab === 'settings' && (
           <div className="fade-in">
-            <div className="header">
-              <h1>{t.settingsTitle}</h1>
-            </div>
+            <div className="header"><h1>{t.settingsTitle}</h1></div>
             
             <h3 style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px', marginLeft: '4px', textTransform: 'uppercase' }}>{t.preferences}</h3>
             <div className="card" style={{ padding: '10px 20px', marginBottom: '24px' }}>
               <div className="settings-item">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div className="settings-icon-bg" style={{ background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)' }}>
-                    {isDarkMode ? <Moon size={18} /> : <Sun size={18} />}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '15px' }}>{t.darkTheme}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{isDarkMode ? 'On' : 'Off'}</div>
-                  </div>
+                  <div className="settings-icon-bg" style={{ background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)' }}>{isDarkMode ? <Moon size={18} /> : <Sun size={18} />}</div>
+                  <div><div style={{ fontWeight: 'bold', fontSize: '15px' }}>{t.darkTheme}</div><div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{isDarkMode ? 'On' : 'Off'}</div></div>
                 </div>
-                <label className="switch">
-                  <input type="checkbox" checked={isDarkMode} onChange={e => setIsDarkMode(e.target.checked)} />
-                  <span className="switch-track" />
-                </label>
+                <label className="switch"><input type="checkbox" checked={isDarkMode} onChange={e => setIsDarkMode(e.target.checked)} /><span className="switch-track" /></label>
               </div>
 
               <div className="settings-item">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div className="settings-icon-bg" style={{ background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)' }}>
-                    <Globe size={18} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '15px' }}>{t.language}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lang === 'my' ? 'မြန်မာ' : 'English'}</div>
-                  </div>
+                  <div className="settings-icon-bg" style={{ background: 'rgba(79, 70, 229, 0.1)', color: 'var(--primary)' }}><Globe size={18} /></div>
+                  <div><div style={{ fontWeight: 'bold', fontSize: '15px' }}>{t.language}</div><div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{lang === 'my' ? 'မြန်မာ' : 'English'}</div></div>
                 </div>
                 <div className="lang-btns no-select">
                   <button type="button" className={`lang-btn ${lang === 'my' ? 'active' : ''}`} onClick={() => setLang('my')}>မြန်မာ</button>
@@ -416,9 +380,7 @@ export default function App() {
                       <UserCircle size={18} style={{ position: 'absolute', left: '10px', top: '14px', color: 'var(--text-muted)' }} />
                       <input type="text" className="form-input" style={{ paddingLeft: '36px' }} value={editName} onChange={e => setEditName(e.target.value)} required />
                     </div>
-                    <button type="submit" className="btn btn-primary no-select" style={{ width: 'auto', padding: '0 20px' }} disabled={isUpdatingName}>
-                      {isUpdatingName ? '...' : t.save}
-                    </button>
+                    <button type="submit" className="btn btn-primary no-select" style={{ width: 'auto', padding: '0 20px' }} disabled={isUpdatingName}>{isUpdatingName ? '...' : t.save}</button>
                   </div>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.5 }}>{t.nameHint}</p>
                 </div>
@@ -429,23 +391,14 @@ export default function App() {
             <div className="card" style={{ padding: '10px 20px' }}>
               <div className="settings-item">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div className="settings-icon-bg" style={{ background: 'rgba(107, 114, 128, 0.1)', color: 'var(--text-muted)' }}>
-                    <Mail size={18} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '15px' }}>{t.email}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{user.email}</div>
-                  </div>
+                  <div className="settings-icon-bg" style={{ background: 'rgba(107, 114, 128, 0.1)', color: 'var(--text-muted)' }}><Mail size={18} /></div>
+                  <div><div style={{ fontWeight: 'bold', fontSize: '15px' }}>{t.email}</div><div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{user.email}</div></div>
                 </div>
               </div>
               <div className="settings-item no-select" onClick={() => setShowLogoutConfirm(true)} style={{ cursor: 'pointer', borderBottom: 'none' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div className="settings-icon-bg" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
-                    <LogOut size={18} />
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#ef4444' }}>{t.logout}</div>
-                  </div>
+                  <div className="settings-icon-bg" style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}><LogOut size={18} /></div>
+                  <div><div style={{ fontWeight: 'bold', fontSize: '15px', color: '#ef4444' }}>{t.logout}</div></div>
                 </div>
               </div>
             </div>
@@ -455,18 +408,9 @@ export default function App() {
       </div>
 
       <div className="bottom-nav no-select">
-        <button type="button" className={`nav-item ${activeTab === 'submit' ? 'active' : ''}`} onClick={() => setActiveTab('submit')}>
-          <Home size={22} />
-          <span>{t.submitTab}</span>
-        </button>
-        <button type="button" className={`nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>
-          <Clock size={22} />
-          <span>{t.historyTab}</span>
-        </button>
-        <button type="button" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
-          <Settings size={22} />
-          <span>{t.settingsTab}</span>
-        </button>
+        <button type="button" className={`nav-item ${activeTab === 'submit' ? 'active' : ''}`} onClick={() => setActiveTab('submit')}><Home size={22} /><span>{t.submitTab}</span></button>
+        <button type="button" className={`nav-item ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}><Clock size={22} /><span>{t.historyTab}</span></button>
+        <button type="button" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}><Settings size={22} /><span>{t.settingsTab}</span></button>
       </div>
 
       {/* SUBMIT MODAL */}
@@ -476,23 +420,16 @@ export default function App() {
             <div className="modal-title">{t.confirmTitle}</div>
             <div className="modal-body">
               <p style={{ marginBottom: '12px', color: 'var(--text-muted)' }}>{t.confirmDesc}</p>
-              
               <div style={{ background: 'var(--bg-color)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border)', marginBottom: '12px' }}>
                 <p><strong>{t.type}:</strong> {pendingPayload.betting_type}</p>
                 <p><strong>{t.session}:</strong> {pendingPayload.session === 'morning' ? t.morning : t.evening}</p>
                 <p style={{ marginTop: '4px' }}><strong>{t.total}:</strong> <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '16px' }}>{pendingPayload.total_amount} MMK</span></p>
               </div>
-
               <div style={{ maxHeight: '150px', overflowY: 'auto', padding: '4px 0' }}>
                 <div className="bet-pill-container" style={{ margin: 0, border: 'none', background: 'transparent', padding: 0 }}>
-                  {pendingPayload.betting_data.map((entry: any, i: number) => (
-                    <span key={i} className="bet-pill" style={{ padding: '4px 10px', fontSize: '13px' }}>
-                      {entry.number} : <span style={{color:'var(--primary)'}}>{entry.amount}</span>
-                    </span>
-                  ))}
+                  {pendingPayload.betting_data.map((entry: any, i: number) => <span key={i} className="bet-pill" style={{ padding: '4px 10px', fontSize: '13px' }}>{entry.number} : <span style={{color:'var(--primary)'}}>{entry.amount}</span></span>)}
                 </div>
               </div>
-
             </div>
             <div className="modal-actions no-select">
               <button type="button" className="btn btn-primary" onClick={handleFinalSubmit}>{t.confirmBtn}</button>
@@ -506,13 +443,8 @@ export default function App() {
       {showLogoutConfirm && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <AlertTriangle color="#ef4444" size={22} />
-              {t.logoutConfirmTitle}
-            </div>
-            <div className="modal-body">
-              <p style={{ color: 'var(--text-muted)' }}>{t.logoutConfirmDesc}</p>
-            </div>
+            <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle color="#ef4444" size={22} />{t.logoutConfirmTitle}</div>
+            <div className="modal-body"><p style={{ color: 'var(--text-muted)' }}>{t.logoutConfirmDesc}</p></div>
             <div className="modal-actions no-select">
               <button type="button" className="btn btn-danger" onClick={executeLogout}>{t.logout}</button>
               <button type="button" className="btn btn-secondary" onClick={() => setShowLogoutConfirm(false)}>{t.cancel}</button>
