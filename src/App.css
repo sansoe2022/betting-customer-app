@@ -1,42 +1,17 @@
 :root {
-  --primary: #4f46e5;
-  --bg-color: #f3f4f6;
-  --card-bg: #ffffff;
-  --text-main: #1f2937;
-  --text-muted: #6b7280;
-  --border: #e5e7eb;
-  --modal-overlay: rgba(0, 0, 0, 0.4);
+  --primary: #4f46e5; --bg-color: #f3f4f6; --card-bg: #ffffff;
+  --text-main: #1f2937; --text-muted: #6b7280; --border: #e5e7eb; --modal-overlay: rgba(0, 0, 0, 0.4);
 }
-
 .dark {
-  --bg-color: #111827;
-  --card-bg: #1f2937;
-  --text-main: #f9fafb;
-  --text-muted: #9ca3af;
-  --border: #374151;
-  --modal-overlay: rgba(0, 0, 0, 0.7);
+  --bg-color: #111827; --card-bg: #1f2937; --text-main: #f9fafb;
+  --text-muted: #9ca3af; --border: #374151; --modal-overlay: rgba(0, 0, 0, 0.7);
 }
 
-* { 
-  box-sizing: border-box; 
-  margin: 0; 
-  padding: 0; 
-  font-family: sans-serif; 
-  -webkit-tap-highlight-color: transparent; /* Click နှိပ်လျှင် အရိပ်မပေါ်စေရန် */
-}
-
-body { 
-  background-color: var(--bg-color); 
-  color: var(--text-main); 
-  padding-bottom: 80px; 
-  transition: background-color 0.3s ease; 
-  overscroll-behavior-y: none; /* Pull-to-refresh ပိတ်ရန် */
-}
-
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; -webkit-tap-highlight-color: transparent; }
+body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 80px; transition: background-color 0.3s ease; overscroll-behavior-y: none; }
 .container { max-width: 500px; margin: 0 auto; padding: 16px; }
 .header { text-align: center; margin-bottom: 20px; padding-top: 10px; position: relative; }
 .header h1 { font-size: 22px; color: var(--primary); margin-bottom: 4px; }
-
 .no-select { user-select: none; -webkit-user-select: none; }
 
 .card { background: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); }
@@ -64,7 +39,6 @@ body {
 .badge.pending { background: #f59e0b; }
 .badge.approved { background: #10b981; }
 .badge.rejected { background: #ef4444; }
-
 .bet-pill-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; background: var(--bg-color); padding: 12px; border-radius: 8px; border: 1px dashed var(--border); }
 .bet-pill { background: var(--card-bg); padding: 6px 12px; border-radius: 20px; font-size: 14px; border: 1px solid var(--border); color: var(--text-main); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
@@ -92,6 +66,15 @@ input:checked + .switch-track:before { transform: translateX(20px); }
 .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 12px; color: var(--text-main); }
 .modal-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; } 
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Bottom Sheet CSS အသစ် (Customer App အတွက်) */
+.bottom-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--modal-overlay); display: flex; align-items: flex-end; z-index: 2000; backdrop-filter: blur(2px); }
+.bottom-sheet-content { background: var(--card-bg); width: 100%; max-width: 500px; margin: 0 auto; border-radius: 20px 20px 0 0; padding: 24px; animation: slideUpSheet 0.3s ease; max-height: 90vh; overflow-y: auto; box-shadow: 0 -10px 25px rgba(0,0,0,0.2); border-top: 1px solid var(--border); }
+@keyframes slideUpSheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+/* Refresh Spin Animation */
+.spin-anim { animation: spin 1s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
 
 .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 12px 24px; border-radius: 30px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; display: flex; align-items: center; gap: 8px; font-size: 14px; animation: slideDown 0.3s ease; }
 @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
