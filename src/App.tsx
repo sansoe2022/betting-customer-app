@@ -20,7 +20,7 @@ const translations = {
     cancel: "Cancel", confirmBtn: "Confirm & Send",
     logoutConfirmTitle: "Confirm Logout", logoutConfirmDesc: "Are you sure you want to log out?",
     rejectReason: "Reason for rejection",
-    editResubmit: "Edit & Resubmit", editList: "Edit List", cancelEdit: "Cancel Edit"
+    editResubmit: "Edit & Resubmit", editList: "Edit List", cancelEdit: "Cancel Edit", editingNotice: "You are editing a rejected list."
   },
   my: {
     submitTab: "စာရင်းပို့ရန်", historyTab: "မှတ်တမ်း", settingsTab: "ဆက်တင်",
@@ -35,7 +35,7 @@ const translations = {
     cancel: "ပယ်ဖျက်မည်", confirmBtn: "အတည်ပြုပြီး ပို့မည်",
     logoutConfirmTitle: "အကောင့်ထွက်ရန်", logoutConfirmDesc: "အကောင့်မှ ထွက်မှာ သေချာပါသလား?",
     rejectReason: "ပယ်ဖျက်ရသည့် အကြောင်းရင်း",
-    editResubmit: "ပြင်ဆင်ပြီး ပြန်ပို့မည်", editList: "စာရင်း ပြင်ဆင်ရန်", cancelEdit: "ပယ်ဖျက်မည်"
+    editResubmit: "ပြင်ဆင်ပြီး ပြန်ပို့မည်", editList: "စာရင်း ပြင်ဆင်ရန်", cancelEdit: "ပယ်ဖျက်မည်", editingNotice: "သင်သည် ပယ်ချခံထားရသော စာရင်းကို ပြင်ဆင်နေပါသည်။"
   }
 };
 
@@ -207,10 +207,15 @@ function MyBetsPage({ user, t, lang, showToast }: any) {
     finally { if (showSpin) setIsRefreshing(false); }
   };
 
-  // Component Mount ဖြစ်တိုင်း Data ဆွဲမည်၊ ပြီးလျှင် ၁၀ စက္ကန့်တစ်ခါ အလိုလို ဆွဲမည် (Real-time)
+  // Cloudflare limit အလဟဿမကုန်စေရန် Smart Polling သုံးထားသည် (၃၀ စက္ကန့်တစ်ခါ)
   useEffect(() => {
     fetchMyBets(true);
-    const interval = setInterval(() => fetchMyBets(false), 10000);
+    const interval = setInterval(() => {
+      // User က ဖုန်းစခရင်ကို ဖွင့်ထားပြီး App ကို ကြည့်နေမှသာ Data ကို Refresh လုပ်မည်
+      if (document.visibilityState === 'visible') {
+        fetchMyBets(false);
+      }
+    }, 30000); 
     return () => clearInterval(interval);
   }, [user.uid]);
 
