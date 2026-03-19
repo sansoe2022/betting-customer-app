@@ -63,7 +63,6 @@ export default function App() {
   const [editName, setEditName] = useState('');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
 
-  // Bottom Sheet နှင့် Modals States
   const [showEditSheet, setShowEditSheet] = useState(false);
   const [editingBetId, setEditingBetId] = useState<string | null>(null);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -118,7 +117,7 @@ export default function App() {
     if (!user) return;
     setIsRefreshing(true);
     await fetchMyBets(user.uid);
-    setTimeout(() => setIsRefreshing(false), 2000); // ၂ စက္ကန့် အဝိုင်းလည်မည်
+    setTimeout(() => setIsRefreshing(false), 2000); 
   };
 
   const calculateTotal = (text: string) => {
@@ -154,7 +153,6 @@ export default function App() {
     return Array.isArray(data) ? data : [];
   };
 
-  // Reject ခံရသော စာရင်းကို Bottom Sheet ဖြင့် ပြင်ဆင်ရန်
   const openEditSheet = (bet: any) => {
     setEditingBetId(bet.id);
     setBettingType(bet.betting_type);
@@ -162,7 +160,7 @@ export default function App() {
     const parsed = parseBettingData(bet.betting_data);
     const text = parsed.map((b: any) => `${b.number} ${b.amount}`).join('\n');
     setBettingData(text);
-    setShowEditSheet(true); // Bottom Sheet ဖွင့်မည်
+    setShowEditSheet(true); 
   };
 
   const closeEditSheet = () => {
@@ -179,7 +177,7 @@ export default function App() {
     if (total === 0) { alert(lang === 'my' ? 'ပုံစံမှားယွင်းနေပါသည်။' : 'Invalid format.'); return; }
 
     setPendingPayload({
-      id: `sub_${Date.now()}`,
+      id: editingBetId ? editingBetId : `sub_${Date.now()}`,
       user_id: user.uid,
       customer_name: customerName,
       betting_type: bettingType,
@@ -188,7 +186,12 @@ export default function App() {
       session: session,
       bet_date: new Date().toISOString().split('T')[0],
     });
-    setShowConfirm(true); 
+    
+    // Bottom Sheet ကို အရင်ပိတ်ပြီးမှ Confirm Box ပြမည်
+    setShowEditSheet(false); 
+    setTimeout(() => {
+      setShowConfirm(true); 
+    }, 100);
   };
 
   const handleFinalSubmit = async () => {
@@ -207,7 +210,7 @@ export default function App() {
       if (response.ok) {
         showToast(lang === 'my' ? 'စာရင်းပေးပို့ခြင်း အောင်မြင်ပါသည်။' : 'Submitted successfully!');
         setBettingData('');
-        if (isEdit) closeEditSheet(); // ပြင်ဆင်ပြီးပါက Bottom Sheet ပိတ်မည်
+        setEditingBetId(null); 
         fetchMyBets(user!.uid); 
         setActiveTab('history'); 
       } else { alert('Failed to submit.'); }
@@ -243,7 +246,6 @@ export default function App() {
                 {t.hello}, <span style={{fontWeight: 'bold', color: 'var(--primary)'}}>{customerName}</span>
               </p>
             </div>
-
             <div className="card">
               <form onSubmit={handlePreSubmit}>
                 <div className="form-group">
@@ -295,17 +297,18 @@ export default function App() {
               <button type="button" className={`toggle-btn ${historySession === 'evening' ? 'active' : ''}`} onClick={() => setHistorySession('evening')}><Moon size={14} /> {t.evening}</button>
             </div>
 
-            <div className="card">
+            {/* My Bets မှတ်တမ်းများကို Card View အသစ်ဖြင့် ပြသခြင်း */}
+            <div>
               {filteredBets.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)' }}><Clock size={40} style={{ opacity: 0.5, marginBottom: 10, margin: '0 auto' }} /><p>{t.noRecords}</p></div>
+                <div className="card" style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}><Clock size={40} style={{ opacity: 0.5, marginBottom: 10, margin: '0 auto' }} /><p>{t.noRecords}</p></div>
               ) : (
                 <div>
                   {filteredBets.map(bet => {
                     const entries = parseBettingData(bet.betting_data);
                     return (
-                      <div key={bet.id} className="bet-list-item">
+                      <div key={bet.id} className="bet-list-card">
                         <div className="bet-header">
-                          <span style={{ fontWeight: 'bold', fontSize: '15px' }}>{bet.betting_type}</span>
+                          <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{bet.betting_type}</span>
                           <span className={`badge ${bet.status}`}>{bet.status}</span>
                         </div>
                         
@@ -313,20 +316,20 @@ export default function App() {
                           {entries.map((entry: any, i: number) => <span key={i} className="bet-pill">{entry.number} : <span style={{color: 'var(--primary)'}}>{entry.amount}</span></span>)}
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '14px', fontWeight: 'bold' }}>
-                          <span style={{color: 'var(--text-muted)'}}>{t.total}:</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', fontSize: '15px', fontWeight: 'bold' }}>
+                          <span style={{color: 'var(--text-muted)'}}>{t.total}</span>
                           <span style={{color: 'var(--primary)'}}>{bet.total_amount} MMK</span>
                         </div>
 
                         {bet.status === 'rejected' && (
-                          <div style={{ marginTop: '14px' }}>
+                          <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
                             {bet.reason && (
-                              <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: '8px', fontSize: '13px', marginBottom: '10px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                              <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
                                 <strong style={{ display: 'block', marginBottom: '4px' }}>{t.rejectReason}:</strong>
                                 {bet.reason}
                               </div>
                             )}
-                            <button type="button" className="btn btn-primary no-select" style={{ padding: '10px', fontSize: '14px', background: '#3b82f6' }} onClick={() => openEditSheet(bet)}>
+                            <button type="button" className="btn btn-primary no-select" style={{ background: '#3b82f6' }} onClick={() => openEditSheet(bet)}>
                               <Edit2 size={16} /> {t.editResubmit}
                             </button>
                           </div>
@@ -410,7 +413,7 @@ export default function App() {
         <button type="button" className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}><Settings size={22} /><span>{t.settingsTab}</span></button>
       </div>
 
-      {/* EDIT BOTTOM SHEET (Rejected မှ ပြန်ပြင်ရန်) */}
+      {/* EDIT BOTTOM SHEET */}
       {showEditSheet && (
         <div className="bottom-sheet-overlay" onClick={closeEditSheet}>
           <div className="bottom-sheet-content" onClick={e => e.stopPropagation()}>
@@ -463,7 +466,10 @@ export default function App() {
             </div>
             <div className="modal-actions no-select">
               <button type="button" className="btn btn-primary" onClick={handleFinalSubmit}>{t.confirmBtn}</button>
-              <button type="button" className="btn btn-secondary" onClick={() => setShowConfirm(false)}>{t.cancel}</button>
+              <button type="button" className="btn btn-secondary" onClick={() => {
+                setShowConfirm(false);
+                if (editingBetId) setShowEditSheet(true); // Confirm ကို ပယ်ဖျက်လျှင် Bottom Sheet ကို ပြန်ဖွင့်မည်
+              }}>{t.cancel}</button>
             </div>
           </div>
         </div>
