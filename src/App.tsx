@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auth, googleProvider } from './firebase';
 import { signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, updateProfile, User } from 'firebase/auth';
-import { Home, Clock, Settings, LogOut, CheckCircle, UserCircle, Calendar, Sun, Moon, Globe, Mail, AlertTriangle } from 'lucide-react';
+import { Home, Clock, Settings, LogOut, CheckCircle, UserCircle, Calendar, Sun, Moon, Globe, Mail, AlertTriangle, RefreshCw } from 'lucide-react';
 import './App.css';
 
 const API_BASE_URL = 'https://betting-api-worker.sansoe5227.workers.dev'; 
@@ -10,7 +10,7 @@ const translations = {
   en: {
     submitTab: "Submit", historyTab: "My Bets", settingsTab: "Settings",
     title: "Submit List", hello: "Hello", type: "Type", session: "Session", morning: "Morning", evening: "Evening",
-    betsLabel: "Bets (e.g. 12 500)", submitBtn: "Submit",
+    betsLabel: "Bets", submitBtn: "Submit",
     historyTitle: "My History", noRecords: "No records found.", total: "Total",
     settingsTitle: "Settings", profile: "Profile", displayName: "Display Name", 
     nameHint: "This name will be visible to the Admin.", save: "Save",
@@ -18,7 +18,8 @@ const translations = {
     preferences: "Preferences", darkTheme: "Dark Theme", language: "Language",
     confirmTitle: "Confirm Submission", confirmDesc: "Please review your list before submitting.",
     cancel: "Cancel", confirmBtn: "Confirm & Send",
-    logoutConfirmTitle: "Confirm Logout", logoutConfirmDesc: "Are you sure you want to log out?"
+    logoutConfirmTitle: "Confirm Logout", logoutConfirmDesc: "Are you sure you want to log out?",
+    rejectReason: "Reason for rejection"
   },
   my: {
     submitTab: "စာရင်းပို့ရန်", historyTab: "မှတ်တမ်း", settingsTab: "ဆက်တင်",
@@ -31,7 +32,8 @@ const translations = {
     preferences: "အပြင်အဆင်များ", darkTheme: "အမှောင်မြင်ကွင်း", language: "ဘာသာစကား",
     confirmTitle: "စာရင်းအတည်ပြုရန်", confirmDesc: "မပို့မီ အောက်ပါအချက်အလက်များကို သေချာစစ်ဆေးပါ။",
     cancel: "ပယ်ဖျက်မည်", confirmBtn: "အတည်ပြုပြီး ပို့မည်",
-    logoutConfirmTitle: "အကောင့်ထွက်ရန်", logoutConfirmDesc: "အကောင့်မှ ထွက်မှာ သေချာပါသလား?"
+    logoutConfirmTitle: "အကောင့်ထွက်ရန်", logoutConfirmDesc: "အကောင့်မှ ထွက်မှာ သေချာပါသလား?",
+    rejectReason: "ပယ်ဖျက်ရသည့် အကြောင်းရင်း"
   }
 };
 
@@ -40,7 +42,6 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'submit' | 'history' | 'settings'>('submit');
   
-  // Persist App Settings
   const [lang, setLang] = useState<'en' | 'my'>(() => (localStorage.getItem('app_lang') as 'en' | 'my') || 'en');
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('app_dark_mode') === 'true');
   const t = translations[lang];
@@ -55,11 +56,11 @@ export default function App() {
   const [historyDate, setHistoryDate] = useState(new Date().toISOString().split('T')[0]);
   const [historySession, setHistorySession] = useState(autoSession);
   const [myBets, setMyBets] = useState<any[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [editName, setEditName] = useState('');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
 
-  // Modals & Toast State
   const [showConfirm, setShowConfirm] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [pendingPayload, setPendingPayload] = useState<any>(null);
@@ -70,9 +71,7 @@ export default function App() {
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  useEffect(() => {
-    localStorage.setItem('app_lang', lang);
-  }, [lang]);
+  useEffect(() => { localStorage.setItem('app_lang', lang); }, [lang]);
 
   useEffect(() => {
     localStorage.setItem('app_dark_mode', String(isDarkMode));
@@ -121,6 +120,7 @@ export default function App() {
   };
 
   const fetchMyBets = async (userId: string) => {
+    setIsRefreshing(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/submissions/my-bets?user_id=${userId}`);
       if (response.ok) {
@@ -129,6 +129,8 @@ export default function App() {
       }
     } catch (error) {
       console.error('Error fetching bets:', error);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -282,8 +284,16 @@ export default function App() {
         {/* TAB 2: MY BETS (HISTORY) */}
         {activeTab === 'history' && (
           <div className="fade-in">
-            <div className="header">
+            <div className="header" style={{ position: 'relative' }}>
               <h1>{t.historyTitle}</h1>
+              {/* My Bets သီးသန့် Refresh ခလုတ် */}
+              <button 
+                onClick={() => fetchMyBets(user.uid)} 
+                className="no-select"
+                style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                <RefreshCw size={16} className={isRefreshing ? 'spin' : ''} />
+              </button>
             </div>
 
             <div className="date-bar">
@@ -327,6 +337,14 @@ export default function App() {
                           <span style={{color: 'var(--text-muted)'}}>{t.total}:</span>
                           <span style={{color: 'var(--primary)'}}>{bet.total_amount} MMK</span>
                         </div>
+
+                        {/* Rejected အကြောင်းပြချက် ပေါ်လာမည့်နေရာ */}
+                        {bet.status === 'rejected' && bet.reason && (
+                          <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: '8px', fontSize: '13px', marginTop: '12px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                            <strong style={{ display: 'block', marginBottom: '4px' }}>{t.rejectReason}:</strong>
+                            {bet.reason}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -426,7 +444,6 @@ export default function App() {
         )}
       </div>
 
-      {/* BOTTOM NAVIGATION */}
       <div className="bottom-nav no-select">
         <button type="button" className={`nav-item ${activeTab === 'submit' ? 'active' : ''}`} onClick={() => setActiveTab('submit')}>
           <Home size={22} />
@@ -456,7 +473,6 @@ export default function App() {
                 <p style={{ marginTop: '4px' }}><strong>{t.total}:</strong> <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '16px' }}>{pendingPayload.total_amount} MMK</span></p>
               </div>
 
-              {/* ထိုးထားသော ဂဏန်းများ ပြပေးသည့်နေရာ */}
               <div style={{ maxHeight: '150px', overflowY: 'auto', padding: '4px 0' }}>
                 <div className="bet-pill-container" style={{ margin: 0, border: 'none', background: 'transparent', padding: 0 }}>
                   {pendingPayload.betting_data.map((entry: any, i: number) => (
