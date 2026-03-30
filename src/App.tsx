@@ -568,7 +568,15 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleLogin = async () => { try { await signInWithRedirect(auth, googleProvider); } catch (error) { alert('Login error'); } };
+    const handleLogin = async () => { 
+    try { 
+      await signInWithPopup(auth, googleProvider); 
+    } catch (error) { 
+      alert('Login error. Please try again.'); 
+      console.error(error);
+    } 
+  };
+
   const executeLogout = () => { signOut(auth); setMyBets([]); };
 
   if (loading) return <div className="container"><p style={{textAlign: 'center', marginTop: 50}}>Loading...</p></div>;
