@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { auth, googleProvider } from './firebase';
-import { signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, updateProfile, User } from 'firebase/auth';
+import { signInWithPopup, getRedirectResult, onAuthStateChanged, signOut, updateProfile, User } from 'firebase/auth';
 import { Home, Clock, Settings, LogOut, CheckCircle, UserCircle, Calendar, Sun, Moon, Globe, Mail, AlertTriangle, RefreshCw, Edit2, Trophy, Search } from 'lucide-react';
 import './App.css';
 
